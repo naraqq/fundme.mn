@@ -1,0 +1,12 @@
+{
+    "Tell a bit more of your story (40+ characters).": "Түүхээ арай дэлгэрэнгүй бичнэ үү (40+ тэмдэгт).",
+    "Upload your bill or contract so we can verify it.": "Шалгахын тулд нэхэмжлэл эсвэл гэрээгээ хавсаргана уу.",
+    "Minimum payment is ₮1,000.": "Хамгийн бага төлбөр ₮1,000.",
+    "This debt has not been verified yet.": "Энэ хүсэлт хараахан баталгаажаагүй байна.",
+    "You can't pay your own debt here.": "Та өөрийн хүсэлтэд хандив өгөх боломжгүй.",
+    "This debt is already fully paid 🎉": "Энэ хүсэлт аль хэдийн бүрэн төлөгдсөн 🎉",
+    "Enter an 8-digit Mongolian mobile number.": "8 оронтой гар утасны дугаар оруулна уу.",
+    "Could not start phone verification. Please try again.": "Утасны баталгаажуулалт эхлүүлж чадсангүй. Дахин оролдоно уу.",
+    "Your number is not verified yet.": "Таны дугаар хараахан баталгаажаагүй байна.",
+    "Amount must be at least ₮5,000.": "Дүн хамгийн багадаа ₮5,000 байх ёстой."
+}
