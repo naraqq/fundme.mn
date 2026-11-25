@@ -1,203 +1,179 @@
-import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Transition } from '@headlessui/react';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
-
-import DeleteUser from '@/components/delete-user';
-import HeadingSmall from '@/components/heading-small';
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import AppLayout from '@/layouts/app-layout';
+import PublicLayout from '@/layouts/public-layout';
 import { useT } from '@/lib/i18n';
-import SettingsLayout from '@/layouts/settings/layout';
+import { type SharedData } from '@/types';
+import { Link, useForm, usePage } from '@inertiajs/react';
+import { type FormEvent, type ReactNode, useState } from 'react';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Profile settings',
-        href: '/settings/profile',
-    },
-];
-
-export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: boolean; status?: string }) {
-    const { auth } = usePage<SharedData>().props;
+/** One page to edit what others see (name, city, bio, company details) and to delete the account. */
+export default function EditProfile() {
     const { t } = useT();
+    const { auth } = usePage<SharedData>().props;
+    const user = auth.user;
+    const isCompany = !!user.is_company;
 
-    const isCompany = !!auth.user.is_company;
-    const { data, setData, post, errors, processing, recentlySuccessful } = useForm<{
-        _method: string;
+    const { data, setData, post, errors, processing } = useForm<{
+        _method: 'patch';
         name: string;
-        email: string | null;
         city: string;
         bio: string;
+        email: string;
         website: string;
         logo: File | null;
     }>({
         _method: 'patch',
-        name: auth.user.name,
-        email: auth.user.email,
-        city: auth.user.city ?? '',
-        bio: auth.user.bio ?? '',
-        website: auth.user.website ?? '',
+        name: user.name,
+        city: (user.city as string | null) ?? '',
+        bio: (user.bio as string | null) ?? '',
+        email: (user.email as string | null) ?? '',
+        website: (user.website as string | null) ?? '',
         logo: null,
     });
 
-    // Multipart (logo) needs POST + method spoofing; Inertia reads _method.
-    const submit: FormEventHandler = (e) => {
+    // Multipart (logo upload) needs POST with method spoofing.
+    function submit(e: FormEvent) {
         e.preventDefault();
+        post(route('profile.update'), { forceFormData: true, preserveScroll: true });
+    }
 
-        post(route('profile.update'), { forceFormData: true });
-    };
+    const phone = user.phone as string | null;
+    const logoPreview = data.logo ? URL.createObjectURL(data.logo) : (user.logo_url as string | null);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Profile settings" />
+        <PublicLayout title={t('pf.edit')}>
+            <div className="mx-auto max-w-2xl py-10">
+                <header className="flex items-end justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">{t('pf.edit')}</h1>
+                        <p className="text-mute mt-2 text-[15px]">{t('set.sub')}</p>
+                    </div>
+                    <Link href={route('users.show', user.id)} className="text-brand shrink-0 text-sm font-medium hover:underline">
+                        {t('set.viewProfile')} →
+                    </Link>
+                </header>
 
-            <SettingsLayout>
-                <div className="space-y-6">
-                    <HeadingSmall title="Profile information" description="Update your name and email address" />
+                <form onSubmit={submit} className="border-line mt-8 space-y-5 rounded-xl border bg-white p-6">
+                    <Field label={t('set.name')} error={errors.name}>
+                        <input className="z-input" value={data.name} onChange={(e) => setData('name', e.target.value)} required maxLength={60} />
+                    </Field>
 
-                    <form onSubmit={submit} className="space-y-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="name">Name</Label>
+                    <Field label={t('pf.city')} error={errors.city}>
+                        <input className="z-input" value={data.city} onChange={(e) => setData('city', e.target.value)} placeholder={t('post.cityPh')} maxLength={60} />
+                    </Field>
 
-                            <Input
-                                id="name"
-                                className="mt-1 block w-full"
-                                value={data.name}
-                                onChange={(e) => setData('name', e.target.value)}
-                                required
-                                autoComplete="name"
-                                placeholder="Full name"
-                            />
+                    <Field label={t('pf.bio')} error={errors.bio} hint={`${data.bio.length}/160`}>
+                        <textarea
+                            className="z-input min-h-20 resize-y"
+                            value={data.bio}
+                            onChange={(e) => setData('bio', e.target.value)}
+                            placeholder={t('pf.bioPh')}
+                            maxLength={160}
+                        />
+                    </Field>
 
-                            <InputError className="mt-2" message={errors.name} />
-                        </div>
+                    {isCompany && (
+                        <>
+                            <Field label={t('co.website')} error={errors.website}>
+                                <input className="z-input" value={data.website} onChange={(e) => setData('website', e.target.value)} placeholder="example.mn" />
+                            </Field>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="city">{t('pf.city')}</Label>
-                            <Input
-                                id="city"
-                                className="mt-1 block w-full"
-                                value={data.city}
-                                onChange={(e) => setData('city', e.target.value)}
-                                placeholder={t('post.cityPh')}
-                            />
-                            <InputError className="mt-2" message={errors.city} />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="bio">{t('pf.bio')}</Label>
-                            <Input
-                                id="bio"
-                                className="mt-1 block w-full"
-                                value={data.bio}
-                                maxLength={160}
-                                onChange={(e) => setData('bio', e.target.value)}
-                                placeholder={t('pf.bioPh')}
-                            />
-                            <InputError className="mt-2" message={errors.bio} />
-                        </div>
-
-                        {isCompany && (
-                            <>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="website">{t('co.website')}</Label>
-                                    <Input
-                                        id="website"
-                                        className="mt-1 block w-full"
-                                        value={data.website}
-                                        onChange={(e) => setData('website', e.target.value)}
-                                        placeholder="example.mn"
+                            <Field label={t('pf.logo')} error={errors.logo} hint={t('pf.logoHint')}>
+                                <div className="flex items-center gap-4">
+                                    <span className="bg-panel-2 size-16 shrink-0 overflow-hidden rounded-xl ring-1 ring-black/5">
+                                        {logoPreview ? (
+                                            <img src={logoPreview} alt="" className="size-full bg-white object-contain" />
+                                        ) : (
+                                            <span className="bg-brand grid size-full place-items-center text-2xl font-bold text-white">{user.name.charAt(0)}</span>
+                                        )}
+                                    </span>
+                                    <input
+                                        type="file"
+                                        accept="image/png,image/jpeg,image/webp"
+                                        className="text-mute text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-panel-2 file:px-3 file:py-2 file:text-sm file:font-medium"
+                                        onChange={(e) => setData('logo', e.target.files?.[0] ?? null)}
                                     />
-                                    <InputError className="mt-2" message={errors.website} />
                                 </div>
+                            </Field>
+                        </>
+                    )}
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="logo">{t('pf.logo')}</Label>
-                                    <div className="flex items-center gap-4">
-                                        <span className="bg-muted size-16 shrink-0 overflow-hidden rounded-xl ring-1 ring-black/5">
-                                            {data.logo ? (
-                                                <img src={URL.createObjectURL(data.logo)} alt="" className="size-full object-contain" />
-                                            ) : auth.user.logo_url ? (
-                                                <img src={auth.user.logo_url} alt="" className="size-full object-contain" />
-                                            ) : (
-                                                <span className="bg-brand grid size-full place-items-center text-2xl font-bold text-white">
-                                                    {auth.user.name.charAt(0)}
-                                                </span>
-                                            )}
-                                        </span>
-                                        <Input
-                                            id="logo"
-                                            type="file"
-                                            accept="image/png,image/jpeg,image/webp"
-                                            className="text-sm"
-                                            onChange={(e) => setData('logo', e.target.files?.[0] ?? null)}
-                                        />
-                                    </div>
-                                    <p className="text-muted-foreground text-xs">{t('pf.logoHint')}</p>
-                                    <InputError className="mt-2" message={errors.logo} />
-                                </div>
-                            </>
-                        )}
+                    <div className="border-line border-t pt-5">
+                        <h2 className="text-sm font-semibold">{t('set.private')}</h2>
+                        <p className="text-mute mt-0.5 text-xs">{t('set.privateD')}</p>
+                    </div>
 
-                        <div className="grid gap-2">
-                            <Label htmlFor="email">Email address</Label>
+                    {phone && (
+                        <Field label={t('set.phone')} hint={t('set.phoneHint')}>
+                            <input className="z-input bg-panel-2 text-mute" value={phone} disabled />
+                        </Field>
+                    )}
 
-                            <Input
-                                id="email"
-                                type="email"
-                                className="mt-1 block w-full"
-                                value={data.email ?? ''}
-                                onChange={(e) => setData('email', e.target.value)}
-                                autoComplete="username"
-                                placeholder="Email address"
-                            />
+                    <Field label={t('set.email')} error={errors.email}>
+                        <input type="email" className="z-input" value={data.email} onChange={(e) => setData('email', e.target.value)} placeholder="name@example.com" />
+                    </Field>
 
-                            <InputError className="mt-2" message={errors.email} />
-                        </div>
+                    <div className="flex justify-end pt-1">
+                        <button disabled={processing} className="btn-brand !rounded-xl !px-6 !py-2.5 text-sm">
+                            {t('set.save')}
+                        </button>
+                    </div>
+                </form>
 
-                        {mustVerifyEmail && auth.user.email_verified_at === null && (
-                            <div>
-                                <p className="mt-2 text-sm text-neutral-800">
-                                    Your email address is unverified.
-                                    <Link
-                                        href={route('verification.send')}
-                                        method="post"
-                                        as="button"
-                                        className="rounded-md text-sm text-neutral-600 underline hover:text-neutral-900 focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
-                                    >
-                                        Click here to re-send the verification email.
-                                    </Link>
-                                </p>
+                <DeleteAccount />
+            </div>
+        </PublicLayout>
+    );
+}
 
-                                {status === 'verification-link-sent' && (
-                                    <div className="mt-2 text-sm font-medium text-green-600">
-                                        A new verification link has been sent to your email address.
-                                    </div>
-                                )}
-                            </div>
-                        )}
+function Field({ label, error, hint, children }: { label: string; error?: string; hint?: string; children: ReactNode }) {
+    return (
+        <label className="block">
+            <span className="z-label">{label}</span>
+            {children}
+            {error ? <span className="mt-1 block text-sm text-rose-600">{error}</span> : hint && <span className="text-mute mt-1 block text-xs">{hint}</span>}
+        </label>
+    );
+}
 
-                        <div className="flex items-center gap-4">
-                            <Button disabled={processing}>Save</Button>
+function DeleteAccount() {
+    const { t } = useT();
+    const [open, setOpen] = useState(false);
+    const form = useForm({ confirm: false as boolean });
 
-                            <Transition
-                                show={recentlySuccessful}
-                                enter="transition ease-in-out"
-                                enterFrom="opacity-0"
-                                leave="transition ease-in-out"
-                                leaveTo="opacity-0"
-                            >
-                                <p className="text-sm text-neutral-600">Saved</p>
-                            </Transition>
-                        </div>
-                    </form>
-                </div>
+    return (
+        <section className="mt-8 rounded-xl border border-rose-200 p-6">
+            <h2 className="font-semibold">{t('set.deleteTitle')}</h2>
+            <p className="text-mute mt-1 text-sm leading-relaxed">{t('set.deleteD')}</p>
 
-                <DeleteUser />
-            </SettingsLayout>
-        </AppLayout>
+            {!open ? (
+                <button type="button" onClick={() => setOpen(true)} className="mt-4 text-sm font-semibold text-rose-600 hover:underline">
+                    {t('set.deleteBtn')}…
+                </button>
+            ) : (
+                <form
+                    className="mt-4 space-y-3"
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        form.delete(route('profile.destroy'));
+                    }}
+                >
+                    <label className="flex items-start gap-2 text-sm">
+                        <input type="checkbox" className="mt-0.5" checked={form.data.confirm} onChange={(e) => form.setData('confirm', e.target.checked)} />
+                        {t('set.deleteConfirm')}
+                    </label>
+                    {form.errors.confirm && <p className="text-sm text-rose-600">{form.errors.confirm}</p>}
+                    <div className="flex gap-2">
+                        <button
+                            disabled={!form.data.confirm || form.processing}
+                            className="inline-flex items-center rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:opacity-40"
+                        >
+                            {t('set.deleteBtn')}
+                        </button>
+                        <button type="button" onClick={() => setOpen(false)} className="btn-ghost !rounded-lg !px-4 !py-2 text-sm">
+                            {t('set.cancel')}
+                        </button>
+                    </div>
+                </form>
+            )}
+        </section>
     );
 }

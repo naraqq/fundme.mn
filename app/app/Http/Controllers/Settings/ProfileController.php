@@ -4,29 +4,22 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Payment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    /**
-     * Show the user's profile settings page.
-     */
-    public function edit(Request $request): Response
+    public function edit(): Response
     {
-        return Inertia::render('settings/profile', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
-            'status' => $request->session()->get('status'),
-        ]);
+        return Inertia::render('settings/profile');
     }
 
-    /**
-     * Update the user's profile settings.
-     */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $user = $request->user();
@@ -36,7 +29,7 @@ class ProfileController extends Controller
             $user->website = $request->input('website');
             if ($request->hasFile('logo')) {
                 if ($user->logo_path) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($user->logo_path);
+                    Storage::disk('public')->delete($user->logo_path);
                 }
                 $user->logo_path = $request->file('logo')->store('logos', 'public');
             }
@@ -48,27 +41,34 @@ class ProfileController extends Controller
 
         $user->save();
 
-        return to_route('profile.edit');
+        return to_route('profile.edit')->with('toast', $this->toast('toast.profileSaved'));
     }
 
     /**
-     * Delete the user's account.
+     * Delete the account. Most users log in by phone and have no password, so we ask for an explicit
+     * confirmation instead. Money records stay (requests, donations and transfers keep the creditor paid),
+     * but the person's past donations become anonymous so their name no longer appears publicly.
      */
     public function destroy(Request $request): RedirectResponse
     {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
+        $request->validate(['confirm' => ['accepted']]);
 
         $user = $request->user();
 
+        // Log out *before* deleting: logout saves the remember-token, which would re-insert a deleted user.
         Auth::logout();
 
-        $user->delete();
+        DB::transaction(function () use ($user) {
+            Payment::withUnconfirmed()->where('user_id', $user->id)->update(['anonymous' => true, 'payer_name' => 'Anonymous']);
+            if ($user->logo_path) {
+                Storage::disk('public')->delete($user->logo_path);
+            }
+            $user->delete();
+        });
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return redirect('/')->with('toast', $this->toast('toast.accountDeleted', type: 'info'));
     }
 }

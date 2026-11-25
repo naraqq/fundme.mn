@@ -61,39 +61,44 @@ class ProfileUpdateTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
-    public function test_user_can_delete_their_account()
+    public function test_phone_user_can_delete_their_account_and_donations_become_anonymous()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['password' => null, 'phone' => '99001122']);
+        $debt = User::factory()->create()->debts()->create([
+            'name' => 'Bat', 'city' => 'UB', 'title' => 'Loan', 'story' => str_repeat('x', 50),
+            'category' => 'loan', 'creditor' => 'Khan Bank', 'amount' => 100000, 'color' => 'amber',
+            'status' => 'verified', 'verified_at' => now(),
+        ]);
+        $payment = $debt->payments()->create(['user_id' => $user->id, 'payer_name' => $user->name, 'anonymous' => false, 'amount' => 5000]);
 
-        $response = $this
-            ->actingAs($user)
-            ->delete('/settings/profile', [
-                'password' => 'password',
-            ]);
-
-        $response
+        $this->actingAs($user)->delete('/settings/profile', ['confirm' => true])
             ->assertSessionHasNoErrors()
             ->assertRedirect('/');
 
         $this->assertGuest();
         $this->assertNull($user->fresh());
+        $payment->refresh();
+        $this->assertTrue($payment->anonymous);
+        $this->assertSame('Anonymous', $payment->payer_name);
+        $this->assertSame(5000, $debt->fresh()->paid, 'the money record must survive');
     }
 
-    public function test_correct_password_must_be_provided_to_delete_account()
+    public function test_deleting_requires_explicit_confirmation()
     {
         $user = User::factory()->create();
 
-        $response = $this
-            ->actingAs($user)
-            ->from('/settings/profile')
-            ->delete('/settings/profile', [
-                'password' => 'wrong-password',
-            ]);
-
-        $response
-            ->assertSessionHasErrors('password')
+        $this->actingAs($user)->from('/settings/profile')->delete('/settings/profile')
+            ->assertSessionHasErrors('confirm')
             ->assertRedirect('/settings/profile');
 
         $this->assertNotNull($user->fresh());
+    }
+
+    public function test_password_and_appearance_pages_are_gone()
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('/settings/password')->assertNotFound();
+        $this->actingAs($user)->get('/settings/appearance')->assertNotFound();
     }
 }
