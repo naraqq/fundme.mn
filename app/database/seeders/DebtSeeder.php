@@ -6,6 +6,7 @@ use App\Models\Debt;
 use App\Models\Disbursement;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\VerifyMn;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
 
@@ -16,6 +17,7 @@ class DebtSeeder extends Seeder
         $owner = User::firstOrCreate(['email' => 'poster@example.com'], ['name' => 'Туршилтын хэрэглэгч', 'password' => 'password']);
         $admin = User::firstOrCreate(['email' => 'admin@example.com'], ['name' => 'fundme.mn Admin', 'password' => 'password']);
         $admin->forceFill(['is_admin' => true])->save();
+        $this->attachDevAdminPhone($admin);
 
         // A few patrons so donor lists look like real people.
         $patrons = collect([
@@ -239,5 +241,21 @@ class DebtSeeder extends Seeder
             'photo_credit' => "{$c['author']} · {$c['license']}",
             'photo_credit_url' => $c['source'],
         ];
+    }
+
+    /**
+     * DEV ONLY: put DEV_ADMIN_PHONE (from .env) on an admin account, so phone login still gets you in after
+     * `migrate:fresh --seed`. If someone already has that phone (seeding without a reset), they become the admin.
+     */
+    private function attachDevAdminPhone(User $admin): void
+    {
+        $phone = VerifyMn::normalizePhone((string) config('services.verify_mn.dev_admin_phone'));
+        if (! $phone || app()->isProduction()) {
+            return;
+        }
+
+        $existing = User::where('phone', $phone)->first();
+        ($existing ?? $admin)->forceFill(['phone' => $phone, 'phone_verified_at' => now(), 'is_admin' => true])->save();
+        $this->command?->info('Admin login by phone: ****'.substr($phone, -4));
     }
 }

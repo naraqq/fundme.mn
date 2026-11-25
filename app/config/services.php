@@ -37,6 +37,8 @@ return [
         // DEV ONLY: comma-separated 8-digit numbers that skip SMS (ignored in production).
         // DEV ONLY: 8-digit numbers that skip SMS. Forced empty in production, so a live site can never bypass.
         'dev_phones' => env('APP_ENV') === 'production' ? [] : array_filter(array_map('trim', explode(',', (string) env('VERIFY_MN_DEV_PHONES', '')))),
+        // DEV ONLY: the seeder gives the admin account this phone, so a database reset never locks you out.
+        'dev_admin_phone' => env('DEV_ADMIN_PHONE'),
     ],
 
     'slack' => [
