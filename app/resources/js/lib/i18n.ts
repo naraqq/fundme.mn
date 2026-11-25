@@ -276,6 +276,13 @@ const en = {
     'ad.ref': 'Bank transaction no.',
     'ad.receipt': 'Receipt file',
     'ad.record': 'Record transfer',
+    'ad.title': 'Admin panel',
+    'ad.sub': 'Review new requests, record transfers to creditors and verify companies.',
+    'ad.tab.review': 'Review',
+    'ad.tab.transfers': 'Transfers',
+    'ad.tab.companies': 'Companies',
+    'ad.availableLabel': 'Available to send',
+    'ad.amount': 'Amount',
 
     // light redesign (GoFundMe-style patterns)
     'home.eyebrow': "Mongolia's mutual-aid platform",
@@ -729,6 +736,13 @@ const mn: Record<TKey, string> = {
     'ad.ref': 'Банкны гүйлгээний дугаар',
     'ad.receipt': 'Баримтын файл',
     'ad.record': 'Шилжүүлэг бүртгэх',
+    'ad.title': 'Админ самбар',
+    'ad.sub': 'Шинэ хүсэлт шалгах, хүлээн авагчид хийсэн шилжүүлэг бүртгэх, компани баталгаажуулах.',
+    'ad.tab.review': 'Шалгах',
+    'ad.tab.transfers': 'Шилжүүлэг',
+    'ad.tab.companies': 'Компаниуд',
+    'ad.availableLabel': 'Шилжүүлэх боломжтой',
+    'ad.amount': 'Дүн',
 
     'home.eyebrow': "Монголын харилцан туслалцааны платформ",
     'home.h1': "Бие биедээ тусалъя",

@@ -15,8 +15,9 @@ class AdminController extends Controller
 {
     public function index(): Response
     {
-        $pending = Debt::withPaid()->where('status', 'pending')->with('user:id,name,email')->oldest()->get()
-            ->map(fn (Debt $d) => [...$d->toArray(), 'owner' => $d->user?->only('name', 'email'), 'has_bill' => (bool) $d->bill_path]);
+        // Most people sign up by phone, so admins need the phone to reach them (admin-only data).
+        $pending = Debt::withPaid()->where('status', 'pending')->with('user:id,name,email,phone')->oldest()->get()
+            ->map(fn (Debt $d) => [...$d->toArray(), 'owner' => $d->user?->only('id', 'name', 'email', 'phone'), 'has_bill' => (bool) $d->bill_path]);
 
         // Money collected but not yet sent to the creditor.
         $toDisburse = Debt::withPaid()->public()->oldest()->get()
