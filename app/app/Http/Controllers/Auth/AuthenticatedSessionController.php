@@ -43,8 +43,13 @@ class AuthenticatedSessionController extends Controller
     {
         Auth::guard('web')->logout();
 
+        // Logging out clears the session, but the visitor's language choice should survive it.
+        $locale = $request->session()->get('locale');
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        if ($locale) {
+            $request->session()->put('locale', $locale);
+        }
 
         return redirect('/');
     }

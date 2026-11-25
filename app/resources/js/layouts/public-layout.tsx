@@ -1,4 +1,5 @@
 import LangSwitch from '@/components/zeel/lang-switch';
+import AccountMenu, { AccountLinks } from '@/components/zeel/account-menu';
 import Logo from '@/components/zeel/logo';
 import { UserAvatar } from '@/components/zeel/people';
 import { useT } from '@/lib/i18n';
@@ -35,7 +36,7 @@ export default function PublicLayout({ title, children, wide = false }: { title?
         ['transparency', t('nav.transparency')],
     ];
     const isActive = (name: string) => route().current(name) || (name === 'debts.index' && route().current('debts.show'));
-    const user = auth.user as (AvatarUser & { name: string }) | null;
+    const user = auth.user as (AvatarUser & { name: string; is_admin?: boolean }) | null;
 
     return (
         <div className="bg-canvas text-ink min-h-screen">
@@ -61,9 +62,15 @@ export default function PublicLayout({ title, children, wide = false }: { title?
                     <div className="ml-auto flex items-center gap-3">
                         <LangSwitch className="hidden xl:flex" />
                         {user ? (
-                            <Link href={route('dashboard')} title={t('nav.account')} className="hover:ring-brand/30 rounded-full transition hover:ring-2">
-                                <UserAvatar user={user} size={32} />
-                            </Link>
+                            <>
+                                {/* Desktop: avatar menu with log out. Phones: the same links live in the menu sheet. */}
+                                <div className="hidden xl:block">
+                                    <AccountMenu user={user} />
+                                </div>
+                                <Link href={route('dashboard')} title={t('nav.account')} className="hover:ring-brand/30 rounded-full transition hover:ring-2 xl:hidden">
+                                    <UserAvatar user={user} size={32} />
+                                </Link>
+                            </>
                         ) : (
                             <Link href={route('login')} className="text-ink/70 hover:text-ink hidden text-sm font-medium whitespace-nowrap sm:block">
                                 {t('nav.login')}
@@ -109,14 +116,13 @@ export default function PublicLayout({ title, children, wide = false }: { title?
 
                         <div className="mt-6">
                             {user ? (
-                                <Link href={route('dashboard')} className="bg-panel-2 flex items-center gap-3 rounded-xl p-3">
-                                    <UserAvatar user={user} size={40} />
-                                    <span className="min-w-0 flex-1">
-                                        <span className="block truncate font-semibold">{user.name}</span>
-                                        <span className="text-mute text-sm">{t('nav.account')}</span>
-                                    </span>
-                                    <ChevronRight className="text-mute size-5" aria-hidden />
-                                </Link>
+                                <div className="bg-panel-2 rounded-xl p-2">
+                                    <div className="flex items-center gap-3 px-3 pt-2 pb-3">
+                                        <UserAvatar user={user} size={40} />
+                                        <span className="min-w-0 flex-1 truncate font-semibold">{user.name}</span>
+                                    </div>
+                                    <AccountLinks user={user} large />
+                                </div>
                             ) : (
                                 <Link href={route('login')} className="btn-ghost w-full !rounded-xl !py-3 text-base">
                                     {t('nav.login')}

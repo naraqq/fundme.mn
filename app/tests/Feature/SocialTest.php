@@ -185,18 +185,30 @@ class SocialTest extends TestCase
         $this->assertNull($company->fresh()->logo_path);
     }
 
-    public function test_non_company_cannot_set_logo_or_website(): void
+    public function test_people_can_set_a_photo_but_not_a_website(): void
     {
         Storage::fake('public');
         $user = User::factory()->create(['is_company' => false]);
 
         $this->actingAs($user)->patch('/settings/profile', [
-            'name' => 'Person', 'website' => 'hacker.mn', 'logo' => UploadedFile::fake()->image('l.png'),
+            'name' => 'Person', 'website' => 'hacker.mn', 'logo' => UploadedFile::fake()->image('me.png'),
         ])->assertSessionHasNoErrors();
 
         $user->refresh();
-        $this->assertNull($user->logo_path);
+        $this->assertStringStartsWith('avatars/', $user->logo_path, 'a profile photo, stored apart from company logos');
+        Storage::disk('public')->assertExists($user->logo_path);
         $this->assertNull($user->website);
+    }
+
+    public function test_profile_shows_phone_verified_without_the_number(): void
+    {
+        $user = User::factory()->create(['phone' => '99112233']);
+        $user->forceFill(['phone_verified_at' => now()])->save();
+
+        $this->get("/u/{$user->id}")->assertInertia(fn ($p) => $p
+            ->where('profile.phone_verified', true)
+            ->missing('profile.phone'));
+        $this->get('/u/'.User::factory()->create()->id)->assertInertia(fn ($p) => $p->where('profile.phone_verified', false));
     }
 
     public function test_email_register_as_company(): void

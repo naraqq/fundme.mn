@@ -14,6 +14,7 @@ export type PublicUser = {
     company_verified?: boolean;
     website?: string | null;
     logo_url?: string | null;
+    phone_verified?: boolean;
     followers?: number;
 };
 
@@ -38,17 +39,17 @@ const AVATAR = [
 
 type AvatarUser = { id: number; name: string; is_company?: boolean; company_verified?: boolean; logo_url?: string | null };
 
-/** Initial on a gradient from the user id. Companies get a square tile — their uploaded logo if any — + a verified tick. */
+/** Photo (round) or company logo (square) if uploaded; otherwise an initial on a gradient. Verified companies get a tick. */
 export function UserAvatar({ user, size = 40, ring = false }: { user: AvatarUser; size?: number; ring?: boolean }) {
     const company = !!user.is_company;
     const initial = user.name.replace(/^[A-ZА-ЯӨҮЁ]\.\s*/u, '').charAt(0).toUpperCase();
     return (
         <span className="relative inline-block shrink-0" style={{ width: size, height: size }}>
-            {company && user.logo_url ? (
+            {user.logo_url ? (
                 <img
                     src={user.logo_url}
                     alt={user.name}
-                    className={`size-full rounded-xl bg-white object-contain ring-1 ring-black/5 ${ring ? 'ring-4 ring-white' : ''}`}
+                    className={`size-full ring-1 ring-black/5 ${company ? 'rounded-xl bg-white object-contain' : 'rounded-full object-cover'} ${ring ? 'ring-4 ring-white' : ''}`}
                 />
             ) : (
                 <span

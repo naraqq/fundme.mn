@@ -52,12 +52,44 @@ export default function EditProfile() {
                 </header>
 
                 <form onSubmit={submit} className="border-line mt-8 space-y-5 rounded-xl border bg-white p-6">
+                    <Field
+                        label={isCompany ? t('pf.logo') : t('pf.photo')}
+                        error={errors.logo}
+                        hint={isCompany ? t('pf.logoHint') : t('pf.photoHint')}
+                    >
+                        <div className="flex items-center gap-4">
+                            <span
+                                className={`bg-panel-2 size-16 shrink-0 overflow-hidden ring-1 ring-black/5 ${isCompany ? 'rounded-xl' : 'rounded-full'}`}
+                            >
+                                {logoPreview ? (
+                                    <img src={logoPreview} alt="" className={`size-full ${isCompany ? 'bg-white object-contain' : 'object-cover'}`} />
+                                ) : (
+                                    <span className="bg-brand grid size-full place-items-center text-2xl font-bold text-white">
+                                        {user.name.charAt(0)}
+                                    </span>
+                                )}
+                            </span>
+                            <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp"
+                                className="text-mute file:bg-panel-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:px-3 file:py-2 file:text-sm file:font-medium"
+                                onChange={(e) => setData('logo', e.target.files?.[0] ?? null)}
+                            />
+                        </div>
+                    </Field>
+
                     <Field label={t('set.name')} error={errors.name}>
                         <input className="z-input" value={data.name} onChange={(e) => setData('name', e.target.value)} required maxLength={60} />
                     </Field>
 
                     <Field label={t('pf.city')} error={errors.city}>
-                        <input className="z-input" value={data.city} onChange={(e) => setData('city', e.target.value)} placeholder={t('post.cityPh')} maxLength={60} />
+                        <input
+                            className="z-input"
+                            value={data.city}
+                            onChange={(e) => setData('city', e.target.value)}
+                            placeholder={t('post.cityPh')}
+                            maxLength={60}
+                        />
                     </Field>
 
                     <Field label={t('pf.bio')} error={errors.bio} hint={`${data.bio.length}/160`}>
@@ -73,25 +105,12 @@ export default function EditProfile() {
                     {isCompany && (
                         <>
                             <Field label={t('co.website')} error={errors.website}>
-                                <input className="z-input" value={data.website} onChange={(e) => setData('website', e.target.value)} placeholder="example.mn" />
-                            </Field>
-
-                            <Field label={t('pf.logo')} error={errors.logo} hint={t('pf.logoHint')}>
-                                <div className="flex items-center gap-4">
-                                    <span className="bg-panel-2 size-16 shrink-0 overflow-hidden rounded-xl ring-1 ring-black/5">
-                                        {logoPreview ? (
-                                            <img src={logoPreview} alt="" className="size-full bg-white object-contain" />
-                                        ) : (
-                                            <span className="bg-brand grid size-full place-items-center text-2xl font-bold text-white">{user.name.charAt(0)}</span>
-                                        )}
-                                    </span>
-                                    <input
-                                        type="file"
-                                        accept="image/png,image/jpeg,image/webp"
-                                        className="text-mute text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-panel-2 file:px-3 file:py-2 file:text-sm file:font-medium"
-                                        onChange={(e) => setData('logo', e.target.files?.[0] ?? null)}
-                                    />
-                                </div>
+                                <input
+                                    className="z-input"
+                                    value={data.website}
+                                    onChange={(e) => setData('website', e.target.value)}
+                                    placeholder="example.mn"
+                                />
                             </Field>
                         </>
                     )}
@@ -108,7 +127,13 @@ export default function EditProfile() {
                     )}
 
                     <Field label={t('set.email')} error={errors.email}>
-                        <input type="email" className="z-input" value={data.email} onChange={(e) => setData('email', e.target.value)} placeholder="name@example.com" />
+                        <input
+                            type="email"
+                            className="z-input"
+                            value={data.email}
+                            onChange={(e) => setData('email', e.target.value)}
+                            placeholder="name@example.com"
+                        />
                     </Field>
 
                     <div className="flex justify-end pt-1">
@@ -129,7 +154,11 @@ function Field({ label, error, hint, children }: { label: string; error?: string
         <label className="block">
             <span className="z-label">{label}</span>
             {children}
-            {error ? <span className="mt-1 block text-sm text-rose-600">{error}</span> : hint && <span className="text-mute mt-1 block text-xs">{hint}</span>}
+            {error ? (
+                <span className="mt-1 block text-sm text-rose-600">{error}</span>
+            ) : (
+                hint && <span className="text-mute mt-1 block text-xs">{hint}</span>
+            )}
         </label>
     );
 }
@@ -157,7 +186,12 @@ function DeleteAccount() {
                     }}
                 >
                     <label className="flex items-start gap-2 text-sm">
-                        <input type="checkbox" className="mt-0.5" checked={form.data.confirm} onChange={(e) => form.setData('confirm', e.target.checked)} />
+                        <input
+                            type="checkbox"
+                            className="mt-0.5"
+                            checked={form.data.confirm}
+                            onChange={(e) => form.setData('confirm', e.target.checked)}
+                        />
                         {t('set.deleteConfirm')}
                     </label>
                     {form.errors.confirm && <p className="text-sm text-rose-600">{form.errors.confirm}</p>}

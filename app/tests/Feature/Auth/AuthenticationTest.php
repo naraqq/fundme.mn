@@ -51,4 +51,12 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
         $response->assertRedirect('/');
     }
+
+    public function test_logout_keeps_the_chosen_language()
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->withSession(['locale' => 'en'])->post('/logout')->assertSessionHas('locale', 'en');
+        $this->assertGuest();
+    }
 }

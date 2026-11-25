@@ -27,12 +27,14 @@ class ProfileController extends Controller
 
         if ($user->is_company) {
             $user->website = $request->input('website');
-            if ($request->hasFile('logo')) {
-                if ($user->logo_path) {
-                    Storage::disk('public')->delete($user->logo_path);
-                }
-                $user->logo_path = $request->file('logo')->store('logos', 'public');
+        }
+
+        // Everyone can have a picture: a logo for companies, a profile photo for people.
+        if ($request->hasFile('logo')) {
+            if ($user->logo_path) {
+                Storage::disk('public')->delete($user->logo_path);
             }
+            $user->logo_path = $request->file('logo')->store($user->is_company ? 'logos' : 'avatars', 'public');
         }
 
         if ($user->isDirty('email')) {

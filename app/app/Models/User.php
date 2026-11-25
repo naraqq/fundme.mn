@@ -118,7 +118,9 @@ class User extends Authenticatable
             'is_company' => (bool) $this->is_company,
             'company_verified' => (bool) $this->company_verified,
             'website' => $this->website,
-            'logo_url' => $this->logo_url,
+            'logo_url' => $this->logo_url, // company logo, or a person's profile photo
+            // Signed up with a verified Mongolian number: the site's main anti-fake signal. (Never the number itself.)
+            'phone_verified' => $this->phone_verified_at !== null,
         ];
     }
 }
