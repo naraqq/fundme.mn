@@ -24,7 +24,7 @@ export default function PhoneLogin({ verification }: { verification: Verificatio
         <PublicLayout title={t('ph.title')}>
             <div className="mx-auto max-w-md py-12 sm:py-16">
                 <div className="bg-brand-soft mx-auto mb-5 grid size-14 place-items-center rounded-2xl text-2xl">📱</div>
-                <h1 className="text-center text-3xl font-extrabold tracking-tight">{verification ? t('ph.stepTitle') : t('ph.title')}</h1>
+                <h1 className="text-center text-3xl font-bold tracking-tight">{verification ? t('ph.stepTitle') : t('ph.title')}</h1>
                 {!verification && <p className="text-mute mt-2 text-center">{t('ph.sub')}</p>}
 
                 <div className="z-card mt-8 p-6 sm:p-7">{verification ? <SmsStep v={verification} /> : <PhoneStep />}</div>
@@ -171,11 +171,11 @@ function SmsStep({ v }: { v: Verification }) {
             <div className="grid grid-cols-2 gap-3 text-center">
                 <div className="bg-panel-2 rounded-xl p-3">
                     <div className="text-mute text-xs">{t('ph.code')}</div>
-                    <div className="font-mono text-2xl font-extrabold tracking-[0.2em]">{v.code}</div>
+                    <div className="font-mono text-2xl font-bold tracking-[0.2em]">{v.code}</div>
                 </div>
                 <div className="bg-panel-2 rounded-xl p-3">
                     <div className="text-mute text-xs">{t('ph.to')}</div>
-                    <div className="font-mono text-2xl font-extrabold">{v.shortcode}</div>
+                    <div className="font-mono text-2xl font-bold">{v.shortcode}</div>
                 </div>
             </div>
 

@@ -37,14 +37,14 @@ export default function Transparency({ totals, ledger }: Props) {
 
                 <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3">
                     {tiles.map(([label, value, tone]) => (
-                        <div key={label} className="border-line bg-panel rounded-2xl border p-4">
-                            <div className={`text-xl font-bold tabular-nums sm:text-2xl ${tone}`}>{value}</div>
+                        <div key={label} className="border-line bg-panel min-w-0 rounded-2xl border p-3.5 sm:p-4">
+                            <div className={`text-base font-bold tabular-nums min-[360px]:text-lg min-[400px]:text-xl sm:text-2xl ${tone}`}>{value}</div>
                             <div className="text-mute text-xs">{label}</div>
                         </div>
                     ))}
                 </div>
 
-                <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
+                <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
                     <section className="border-line bg-panel rounded-3xl border p-6">
                         <h2 className="mb-4 font-semibold">{t('tr.ledger')}</h2>
                         {ledger.length === 0 && <p className="text-mute text-sm">{t('tr.empty')}</p>}

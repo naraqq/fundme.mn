@@ -169,6 +169,23 @@
     --color-brand: #e2144b;
     --color-brand-2: #c20f40;
     --color-brand-soft: #fdebf0;
+
+    /* Swipe hint: the first card rocks gently so people see it can be swiped. */
+    --animate-swipe-hint: swipe-hint 2.6s ease-in-out 0.6s infinite;
+    --animate-swipe-hand: swipe-hand 1.3s ease-in-out infinite;
+    @keyframes swipe-hint {
+        0%, 55%, 100% { transform: translateX(0) rotate(0); }
+        15% { transform: translateX(-22px) rotate(-3deg); }
+        35% { transform: translateX(22px) rotate(3deg); }
+    }
+    @keyframes swipe-hand {
+        0%, 100% { transform: translateX(-4px) rotate(-8deg); }
+        50% { transform: translateX(4px) rotate(8deg); }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-swipe-hint, .animate-swipe-hand { animation: none; }
 }
 
 @layer components {

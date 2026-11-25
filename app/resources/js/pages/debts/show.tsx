@@ -1,3 +1,4 @@
+import Comments, { type CommentItem } from '@/components/zeel/comments';
 import PayForm from '@/components/zeel/pay-form';
 import ReportRequest from '@/components/zeel/report-request';
 import ShareBar from '@/components/zeel/share-bar';
@@ -5,19 +6,26 @@ import { RequestProgress } from '@/components/zeel/status';
 import { MoneyTrail, Receipts, Timeline, VerificationPanel } from '@/components/zeel/transparency-panels';
 import { Avatar, Badges, Bar, Cover } from '@/components/zeel/ui';
 import PublicLayout from '@/layouts/public-layout';
-import { fmtDate, useT } from '@/lib/i18n';
+import { useT } from '@/lib/i18n';
 import { mnt, type Debt, type Payment } from '@/lib/zeel';
 import { type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
+import { MapPin } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type Props = { debt: Debt; isOwner: boolean; shareUrl: string };
 
-export default function ShowDebt({ debt, isOwner, shareUrl, reportReasons, reported }: Props & { reportReasons: string[]; reported: boolean }) {
+export default function ShowDebt({
+    debt,
+    isOwner,
+    shareUrl,
+    reportReasons,
+    reported,
+    comments,
+}: Props & { reportReasons: string[]; reported: boolean; comments: CommentItem[] }) {
     const { t } = useT();
     // Paused (reported) requests take no money; only the owner and admins can even see them.
     const live = debt.status === 'verified' && !debt.paused;
-    const words = (debt.payments ?? []).filter((p) => p.message);
 
     return (
         <PublicLayout title={`${debt.name} — ${debt.title}`}>
@@ -27,22 +35,25 @@ export default function ShowDebt({ debt, isOwner, shareUrl, reportReasons, repor
                         <b className="font-semibold">{t('rep.pausedTitle')}</b> {t('rep.pausedD')}
                     </div>
                 )}
-                <h1 className="max-w-4xl text-3xl leading-tight font-extrabold tracking-tight sm:text-4xl">{debt.title}</h1>
+                <h1 className="max-w-4xl text-3xl leading-tight font-bold tracking-tight sm:text-4xl">{debt.title}</h1>
 
-                <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_380px]">
+                <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
                     {/* ── Main column ── */}
                     <div className="min-w-0">
                         <Cover debt={debt} className="aspect-[16/9] rounded-2xl" credit />
 
-                        <div className="border-line mt-6 flex flex-wrap items-center gap-3 border-b pb-6">
+                        <div className="border-line mt-6 flex flex-wrap items-center gap-x-3 gap-y-3 border-b pb-6">
                             <Avatar debt={debt} size={44} />
                             <div className="min-w-0 flex-1">
                                 <div className="font-semibold">{t('show.organizer', { name: debt.name })}</div>
-                                <div className="text-mute text-sm">
-                                    📍 {debt.city}
+                                <div className="text-mute flex items-center gap-1 text-sm">
+                                    <MapPin className="size-3.5" aria-hidden /> {debt.city}
                                 </div>
                             </div>
-                            <Badges debt={debt} />
+                            {/* On phones the badges get their own line so the name isn't squeezed. */}
+                            <div className="max-sm:basis-full max-sm:pl-14">
+                                <Badges debt={debt} />
+                            </div>
                         </div>
 
                         <div className="mt-6 space-y-4">
@@ -63,31 +74,16 @@ export default function ShowDebt({ debt, isOwner, shareUrl, reportReasons, repor
                                 </section>
 
                                 <section className="mt-10">
-                                    <h2 className="mb-4 text-xl font-bold">{t('show.words', { n: words.length })}</h2>
-                                    {words.length === 0 && <p className="text-mute text-sm">{t('show.noWords')}</p>}
-                                    <ul className="space-y-5">
-                                        {words.map((p) => (
-                                            <li key={p.id} className="flex gap-3">
-                                                <DonorDot />
-                                                <div>
-                                                    <div className="text-sm">
-                                                        <DonorName payment={p} />{' '}
-                                                        <span className="text-mute">· {mnt(p.amount)} · {fmtDate(p.created_at)}</span>
-                                                    </div>
-                                                    <p className="mt-1">{p.message}</p>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </section>
-
-                                <section className="mt-10">
                                     <Timeline debt={debt} />
                                 </section>
 
                                 <section className="mt-10">
                                     <ShareBar url={shareUrl} title={debt.title} />
                                 </section>
+
+                                <div className="mt-12">
+                                    <Comments debtId={debt.id} comments={comments} payments={debt.payments ?? []} open={live} />
+                                </div>
                             </>
                         )}
                     </div>
@@ -168,7 +164,7 @@ function DonateCard({ debt, isOwner, shareUrl }: Props) {
     return (
         <div id="pay" className="z-card scroll-mt-24 p-6">
             <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-extrabold">{mnt(debt.paid)}</span>
+                <span className="text-2xl font-bold">{mnt(debt.paid)}</span>
                 <span className="text-mute text-sm">{t('show.raisedOf', { goal: mnt(debt.amount) })}</span>
             </div>
             <Bar value={debt.paid} max={debt.amount} className="mt-3 h-2" />

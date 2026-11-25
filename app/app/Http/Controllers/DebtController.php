@@ -23,6 +23,8 @@ class DebtController extends Controller
         return Inertia::render('welcome', [
             'featured' => Debt::withPaid()->open()->where('amount', '>', Debt::SMALL_MAX)->latest()->take(6)->get(),
             'small' => Debt::withPaid()->open()->where('amount', '<=', Debt::SMALL_MAX)->get()->sortBy('remaining')->values()->take(8),
+            // Swipe right on the home page: the people who need help most.
+            'deck' => self::neediest()->take(6)->values(),
             'stats' => [
                 'paid' => (int) $debts->sum('paid'),
                 'posted' => $debts->count(),
@@ -41,13 +43,22 @@ class DebtController extends Controller
         $cat = in_array($request->query('cat'), Debt::CATEGORIES, true) ? $request->query('cat') : null;
         $sort = in_array($request->query('sort'), ['new', 'small', 'close'], true) ? $request->query('sort') : 'new';
         $smallOnly = $request->boolean('small');
+        $search = mb_substr(trim((string) $request->query('q', '')), 0, 60);
+        $openOnly = $request->boolean('open');
 
-        $debts = Debt::withPaid()->public()
-            ->when($cat, fn ($q) => $q->where('category', $cat))
+        // Everything except the category, so each category tab can show how many it would give.
+        $matching = Debt::withPaid()->public()
             ->when($smallOnly, fn ($q) => $q->where('amount', '<=', Debt::SMALL_MAX))
+            ->when($search !== '', fn ($q) => $q->where(fn ($w) => $w
+                ->where('title', 'like', "%{$search}%")
+                ->orWhere('name', 'like', "%{$search}%")
+                ->orWhere('city', 'like', "%{$search}%")
+                ->orWhere('story', 'like', "%{$search}%")))
             ->latest()
-            ->get();
+            ->get()
+            ->when($openOnly, fn ($c) => $c->filter(fn (Debt $d) => $d->remaining > 0));
 
+        $debts = $matching->when($cat, fn ($c) => $c->where('category', $cat))->values();
         $debts = match ($sort) {
             'small' => $debts->sortBy('remaining')->values(),
             'close' => $debts->sortByDesc(fn ($d) => $d->paid / max(1, $d->amount))->values(),
@@ -56,8 +67,16 @@ class DebtController extends Controller
 
         return Inertia::render('debts/index', [
             'debts' => $debts,
-            'filters' => ['cat' => $cat, 'sort' => $sort, 'small' => $smallOnly],
+            'counts' => $matching->countBy('category'),
+            'total' => $matching->count(),
+            'filters' => ['cat' => $cat, 'sort' => $sort, 'small' => $smallOnly, 'q' => $search, 'open' => $openOnly],
         ]);
+    }
+
+    /** Open requests, least-funded first so the people who need help most surface; oldest breaks ties. */
+    private static function neediest(): \Illuminate\Support\Collection
+    {
+        return Debt::withPaid()->open()->oldest()->get()->sortBy(fn ($d) => $d->paid / max(1, $d->amount))->values();
     }
 
     /**
@@ -68,8 +87,7 @@ class DebtController extends Controller
     {
         $cat = in_array($request->query('cat'), Debt::CATEGORIES, true) ? $request->query('cat') : null;
 
-        // Least-funded first so the people who need help most surface, oldest breaking ties.
-        $all = Debt::withPaid()->open()->oldest()->get()->sortBy(fn ($d) => $d->paid / max(1, $d->amount))->values();
+        $all = self::neediest();
 
         return Inertia::render('debts/discover', [
             'debts' => $cat ? $all->where('category', $cat)->values() : $all,
@@ -95,8 +113,25 @@ class DebtController extends Controller
             'owner' => $debt->user()->first(['id', 'name'])?->only('id', 'name'),
             'shareUrl' => route('debts.show', $debt),
             'reportReasons' => config('fraud.report_reasons'),
+            'comments' => $this->commentsFor($debt, $request->user()),
             'reported' => $request->user() ? $debt->reports()->where('user_id', $request->user()->id)->exists() : false,
         ]);
+    }
+
+    /** Public comments, with "requester" / "donor" labels and whether the viewer may delete each one. */
+    private function commentsFor(Debt $debt, ?User $viewer): array
+    {
+        $donorIds = $debt->payments()->whereNotNull('user_id')->pluck('user_id')->unique();
+
+        return $debt->comments()->with('user:id,name,is_company,company_verified,logo_path')->take(200)->get()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'body' => $c->body,
+                'at' => $c->created_at->toIso8601String(),
+                'user' => $c->user ? [...$c->user->only('id', 'name', 'is_company', 'company_verified'), 'logo_url' => $c->user->logo_url] : null,
+                'role' => $c->user_id === $debt->user_id ? 'owner' : ($donorIds->contains($c->user_id) ? 'donor' : null),
+                'canDelete' => $viewer && ($viewer->id === $c->user_id || $viewer->is_admin),
+            ])->all();
     }
 
     public function create(Request $request): Response

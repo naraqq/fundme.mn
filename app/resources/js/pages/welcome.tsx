@@ -1,15 +1,18 @@
 import { NameWithBadge, UserAvatar, type BoardRow } from '@/components/zeel/people';
+import { MiniDeck } from '@/components/zeel/swipe-deck';
+import WelcomeSwipe from '@/components/zeel/welcome-swipe';
 import { Bar, Cover, DebtCard } from '@/components/zeel/ui';
 import PublicLayout from '@/layouts/public-layout';
 import { useT } from '@/lib/i18n';
 import { CATEGORIES, catOf, mnt, type Debt } from '@/lib/zeel';
 import { Link } from '@inertiajs/react';
-import { ArrowRight, BadgeCheck, FileCheck2, HandHeart, Landmark, MapPin, ReceiptText, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BadgeCheck, FileCheck2, Heart, HandHeart, Landmark, MapPin, ReceiptText, type LucideIcon } from 'lucide-react';
 import { type ReactNode } from 'react';
 
 type Props = {
     featured: Debt[];
     small: Debt[];
+    deck: Debt[];
     stats: { paid: number; posted: number; cleared: number; sent: number; users: number; usersWeek: number };
     categories: Record<string, number>;
     topDonors: BoardRow[];
@@ -18,12 +21,13 @@ type Props = {
 
 const n = (v: number) => v.toLocaleString('en-US');
 
-export default function Welcome({ featured, small, stats, categories, topDonors, topCompanies }: Props) {
+export default function Welcome({ featured, small, deck, stats, categories, topDonors, topCompanies }: Props) {
     const { t } = useT();
     const spotlight = featured[0];
 
     return (
         <PublicLayout title={t('home.title')} wide>
+            <WelcomeSwipe debts={deck} />
             {/* Hero: what this is, in plain words, next to a real request */}
             <section className="border-line border-b">
                 <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-14 md:grid-cols-[1.15fr_1fr] md:py-20">
@@ -53,15 +57,47 @@ export default function Welcome({ featured, small, stats, categories, topDonors,
             <div className="mx-auto max-w-6xl px-4">
                 {/* Numbers */}
                 <dl className="mt-10 grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    <Stat label={t('home.statPaid')} value={mnt(stats.paid)} />
+                    {/* Phones: the money total and the member count get full rows; long numbers don't fit half a phone. */}
+                    <Stat label={t('home.statPaid')} value={mnt(stats.paid)} className="max-lg:col-span-2" />
                     <Stat label={t('home.statPosted')} value={n(stats.posted)} />
                     <Stat label={t('home.statCleared')} value={n(stats.cleared)} />
                     <Stat
                         label={t('stat.users')}
                         value={n(stats.users)}
                         note={stats.usersWeek > 0 ? t('stat.usersWeek', { n: n(stats.usersWeek) }) : undefined}
+                        className="max-lg:col-span-2"
                     />
                 </dl>
+
+                {/* Swipe through people who need help, right here */}
+                {deck.length > 0 && (
+                    <section className="mt-20 grid items-center gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] md:gap-16">
+                        <div>
+                            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('home.swipeT')}</h2>
+                            <p className="text-mute mt-3 max-w-md leading-relaxed">{t('home.swipeD')}</p>
+                            <ul className="mt-6 space-y-3 text-sm">
+                                <li className="flex items-center gap-3">
+                                    <span className="bg-panel-2 text-ink grid size-8 shrink-0 place-items-center rounded-full">
+                                        <ArrowLeft className="size-4" aria-hidden />
+                                    </span>
+                                    {t('home.swipeLeft')}
+                                </li>
+                                <li className="flex items-center gap-3">
+                                    <span className="bg-brand grid size-8 shrink-0 place-items-center rounded-full text-white">
+                                        <Heart className="size-4" aria-hidden />
+                                    </span>
+                                    {t('home.swipeRight')}
+                                </li>
+                            </ul>
+                            <Link href={route('discover')} className="text-brand mt-6 hidden items-center gap-1.5 text-sm font-medium hover:underline md:inline-flex">
+                                {t('home.swipeMore')} <ArrowRight className="size-4" aria-hidden />
+                            </Link>
+                        </div>
+                        <div className="mx-auto w-full max-w-sm">
+                            <MiniDeck debts={deck} />
+                        </div>
+                    </section>
+                )}
 
                 {/* Who it's for */}
                 <section className="mt-20">
@@ -130,7 +166,7 @@ export default function Welcome({ featured, small, stats, categories, topDonors,
 
                 {/* Community */}
                 {(topDonors.length > 0 || topCompanies.length > 0) && (
-                    <section className="mt-20 grid gap-10 lg:grid-cols-2">
+                    <section className="mt-20 grid grid-cols-1 gap-10 lg:grid-cols-2">
                         {topDonors.length > 0 && (
                             <div>
                                 <SectionHead title={t('lb.title')} link={{ href: route('donors'), label: t('lb.seeAll') }} />
@@ -215,12 +251,12 @@ function Spotlight({ debt }: { debt: Debt }) {
     );
 }
 
-function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
+function Stat({ label, value, note, className = '' }: { label: string; value: string; note?: string; className?: string }) {
     return (
-        <div className="border-line rounded-xl border bg-white px-5 py-4">
+        <div className={`border-line min-w-0 rounded-xl border bg-white px-4 py-4 sm:px-5 ${className}`}>
             <dt className="text-mute text-sm first-letter:uppercase">{label}</dt>
             <dd className="mt-1 flex flex-wrap items-baseline gap-x-2">
-                <span className="text-2xl font-semibold tracking-tight tabular-nums">{value}</span>
+                <span className="text-xl font-semibold tracking-tight tabular-nums sm:text-2xl">{value}</span>
                 {note && <span className="text-xs font-medium text-emerald-700">{note}</span>}
             </dd>
         </div>
@@ -229,7 +265,7 @@ function Stat({ label, value, note }: { label: string; value: string; note?: str
 
 function SectionHead({ title, sub, link }: { title: string; sub?: string; link?: { href: string; label: string } }) {
     return (
-        <div className="mb-5 flex items-end justify-between gap-4">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
             <div>
                 <h2 className="text-xl font-bold tracking-tight sm:text-2xl">{title}</h2>
                 {sub && <p className="text-mute mt-1 text-sm">{sub}</p>}

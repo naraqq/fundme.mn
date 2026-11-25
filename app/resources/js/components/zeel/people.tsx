@@ -147,7 +147,7 @@ export function PersonRow({ person, showFollow = true }: { person: PublicUser & 
                     <NameWithBadge user={person} />
                 </Link>
                 <div className="text-mute truncate text-xs">
-                    {person.city && <>📍 {person.city} · </>}
+                    {person.city && <>{person.city} · </>}
                     {person.followers ?? 0} {t('pf.followers').toLowerCase()}
                 </div>
             </div>
@@ -186,12 +186,12 @@ export function DonorRow({ row, follow = true }: { row: BoardRow; follow?: boole
                     <NameWithBadge user={row.user} />
                 </Link>
                 <div className="text-mute truncate text-xs">
-                    {row.user.city && <>📍 {row.user.city} · </>}
+                    {row.user.city && <>{row.user.city} · </>}
                     {t('lb.helped', { n: row.helped })} · {row.followers} {t('pf.followers').toLowerCase()}
                 </div>
             </div>
             <div className="text-right">
-                <div className="font-extrabold tabular-nums">{mnt(row.total)}</div>
+                <div className="font-bold tabular-nums">{mnt(row.total)}</div>
                 <div className="text-mute text-[11px]">{t('card.donations', { n: row.gifts })}</div>
             </div>
             {follow && (

@@ -16,7 +16,7 @@ export default function PhoneName({ phone }: { phone: string }) {
         <PublicLayout title={t('ph.create')}>
             <div className="mx-auto max-w-md py-12 sm:py-16">
                 <div className="mx-auto mb-5 grid size-14 place-items-center rounded-2xl bg-emerald-50 text-2xl">✅</div>
-                <h1 className="text-center text-3xl font-extrabold tracking-tight">{t('ph.nameTitle')}</h1>
+                <h1 className="text-center text-3xl font-bold tracking-tight">{t('ph.nameTitle')}</h1>
                 <p className="text-mute mt-2 text-center text-sm">{t('ph.nameSub', { phone })}</p>
 
                 <form onSubmit={submit} className="z-card mt-8 space-y-4 p-6 sm:p-7">

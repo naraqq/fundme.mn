@@ -3,11 +3,11 @@ import Logo from '@/components/zeel/logo';
 import { UserAvatar } from '@/components/zeel/people';
 import { useT } from '@/lib/i18n';
 import { type SharedData } from '@/types';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { ChevronRight, Menu, Plus, X } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 type AvatarUser = Parameters<typeof UserAvatar>[0]['user'];
-import { Head, Link, usePage } from '@inertiajs/react';
-import { Menu, Plus, X } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
 
 export default function PublicLayout({ title, children, wide = false }: { title?: string; children: ReactNode; wide?: boolean }) {
     const { auth } = usePage<SharedData>().props;
@@ -19,6 +19,14 @@ export default function PublicLayout({ title, children, wide = false }: { title?
         document.documentElement.classList.remove('dark'); // public site is always light
     }, [locale]);
 
+    // The phone menu covers the page: stop the page behind it from scrolling.
+    useEffect(() => {
+        document.body.style.overflow = menuOpen ? 'hidden' : '';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [menuOpen]);
+
     const links: [string, string][] = [
         ['discover', t('nav.discover')],
         ['debts.index', t('nav.all')],
@@ -27,6 +35,7 @@ export default function PublicLayout({ title, children, wide = false }: { title?
         ['transparency', t('nav.transparency')],
     ];
     const isActive = (name: string) => route().current(name) || (name === 'debts.index' && route().current('debts.show'));
+    const user = auth.user as (AvatarUser & { name: string }) | null;
 
     return (
         <div className="bg-canvas text-ink min-h-screen">
@@ -37,12 +46,12 @@ export default function PublicLayout({ title, children, wide = false }: { title?
                         <Logo />
                     </Link>
 
-                    <div className="hidden h-full items-stretch gap-6 text-sm lg:flex">
+                    <div className="hidden h-full items-stretch gap-6 text-sm xl:flex">
                         {links.map(([name, label]) => (
                             <Link
                                 key={name}
                                 href={route(name)}
-                                className={`relative flex items-center font-medium transition ${isActive(name) ? 'text-ink after:bg-brand after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full' : 'text-ink/60 hover:text-ink'}`}
+                                className={`relative flex items-center font-medium whitespace-nowrap transition ${isActive(name) ? 'text-ink after:bg-brand after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full' : 'text-ink/60 hover:text-ink'}`}
                             >
                                 {label}
                             </Link>
@@ -50,60 +59,78 @@ export default function PublicLayout({ title, children, wide = false }: { title?
                     </div>
 
                     <div className="ml-auto flex items-center gap-3">
-                        <LangSwitch className="hidden sm:flex" />
-                        {auth.user ? (
-                            <Link href={route('dashboard')} title={t('nav.account')} className="rounded-full ring-offset-2 transition hover:ring-2 hover:ring-brand/30">
-                                <UserAvatar user={auth.user as AvatarUser} size={34} />
+                        <LangSwitch className="hidden xl:flex" />
+                        {user ? (
+                            <Link href={route('dashboard')} title={t('nav.account')} className="hover:ring-brand/30 rounded-full transition hover:ring-2">
+                                <UserAvatar user={user} size={32} />
                             </Link>
                         ) : (
-                            <Link href={route('login')} className="text-ink/70 hover:text-ink hidden text-sm font-medium sm:block">
+                            <Link href={route('login')} className="text-ink/70 hover:text-ink hidden text-sm font-medium whitespace-nowrap sm:block">
                                 {t('nav.login')}
                             </Link>
                         )}
-                        <Link href={route('debts.create')} className="btn-brand !px-4 !py-2 text-sm">
-                            <Plus className="size-4" aria-hidden /> <span>{t('nav.post')}</span>
+                        {/* On phones the main action lives at the top of the menu, so the bar never overflows. */}
+                        <Link href={route('debts.create')} className="btn-brand hidden !px-4 !py-2 text-sm whitespace-nowrap sm:inline-flex">
+                            <Plus className="size-4" aria-hidden /> {t('nav.post')}
                         </Link>
                         <button
                             type="button"
                             onClick={() => setMenuOpen((o) => !o)}
-                            className="text-ink hover:bg-panel-2 -mr-2 grid size-9 place-items-center rounded-lg lg:hidden"
+                            className="text-ink hover:bg-panel-2 -mr-2 grid size-10 shrink-0 place-items-center rounded-lg xl:hidden"
                             aria-label="Menu"
                             aria-expanded={menuOpen}
                         >
-                            {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+                            {menuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
                         </button>
                     </div>
                 </nav>
 
-                {/* Phones and tablets: links in a drop-down panel */}
-                {menuOpen && (
-                    <div className="border-line border-t bg-white lg:hidden">
-                        <div className="mx-auto flex max-w-6xl flex-col px-4 py-2">
+            </header>
+        {/* Phones and tablets: a full-height menu sheet under the bar (outside <header>: its blur would trap position:fixed) */}
+            {menuOpen && (
+                <div className="fixed inset-x-0 top-16 bottom-0 z-40 overflow-y-auto bg-white xl:hidden">
+                    <div className="mx-auto flex max-w-xl flex-col px-4 pt-4 pb-10">
+                        <Link href={route('debts.create')} className="btn-brand w-full !rounded-xl !py-3.5 text-base">
+                            <Plus className="size-5" aria-hidden /> {t('nav.post')}
+                        </Link>
+
+                        <nav className="mt-4">
                             {links.map(([name, label]) => (
                                 <Link
                                     key={name}
                                     href={route(name)}
-                                    className={`rounded-lg px-3 py-2.5 font-medium ${isActive(name) ? 'bg-brand-soft text-brand' : 'hover:bg-panel-2'}`}
+                                    className={`border-line flex items-center justify-between border-b py-4 text-lg font-medium ${isActive(name) ? 'text-brand' : ''}`}
                                 >
                                     {label}
+                                    <ChevronRight className="text-mute size-5" aria-hidden />
                                 </Link>
                             ))}
-                            <div className="border-line mt-2 flex items-center justify-between border-t px-3 pt-3 pb-1">
-                                {auth.user ? (
-                                    <Link href={route('dashboard')} className="font-medium">
-                                        {t('nav.account')}
-                                    </Link>
-                                ) : (
-                                    <Link href={route('login')} className="font-medium">
-                                        {t('nav.login')}
-                                    </Link>
-                                )}
-                                <LangSwitch />
-                            </div>
+                        </nav>
+
+                        <div className="mt-6">
+                            {user ? (
+                                <Link href={route('dashboard')} className="bg-panel-2 flex items-center gap-3 rounded-xl p-3">
+                                    <UserAvatar user={user} size={40} />
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block truncate font-semibold">{user.name}</span>
+                                        <span className="text-mute text-sm">{t('nav.account')}</span>
+                                    </span>
+                                    <ChevronRight className="text-mute size-5" aria-hidden />
+                                </Link>
+                            ) : (
+                                <Link href={route('login')} className="btn-ghost w-full !rounded-xl !py-3 text-base">
+                                    {t('nav.login')}
+                                </Link>
+                            )}
+                        </div>
+
+                        <div className="mt-6 flex items-center justify-between">
+                            <span className="text-mute text-sm">{t('nav.language')}</span>
+                            <LangSwitch />
                         </div>
                     </div>
-                )}
-            </header>
+                </div>
+            )}
 
             <main className={wide ? '' : 'mx-auto max-w-6xl px-4'}>{children}</main>
 

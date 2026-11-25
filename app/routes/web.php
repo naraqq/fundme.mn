@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\TransparencyController;
 use App\Http\Controllers\UserProfileController;
@@ -34,6 +35,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('debts', [DebtController::class, 'store'])->middleware('throttle:5,60')->name('debts.store');
     Route::post('debts/{debt}/pay', [DebtController::class, 'pay'])->middleware('throttle:20,1')->name('debts.pay');
     Route::post('debts/{debt}/report', [DebtController::class, 'report'])->middleware('throttle:10,60')->name('debts.report');
+    Route::post('debts/{debt}/comments', [CommentController::class, 'store'])->middleware('throttle:10,10')->name('comments.store');
+    Route::delete('comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('u/{user}/follow', [UserProfileController::class, 'follow'])->middleware('throttle:60,1')->name('users.follow');
     Route::delete('u/{user}/follow', [UserProfileController::class, 'unfollow'])->middleware('throttle:60,1')->name('users.unfollow');
 });

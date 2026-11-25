@@ -1,6 +1,7 @@
 import { useT } from '@/lib/i18n';
 import { catOf, mnt, type Debt } from '@/lib/zeel';
 import { Link } from '@inertiajs/react';
+import { MapPin } from 'lucide-react';
 
 // Soft, light-theme cover art used when a debt has no photo.
 const COVERS: Record<string, { bg: string; dot: string }> = {
@@ -134,8 +135,8 @@ export function DebtCard({ debt }: { debt: Debt }) {
         <Link href={route('debts.show', debt.id)} className="group z-card flex flex-col overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg">
             <div className="relative">
                 <Cover debt={debt} className="aspect-[16/10] transition duration-500 group-hover:scale-[1.02]" />
-                <span className="text-ink absolute bottom-3 left-3 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur">
-                    📍 {debt.city}
+                <span className="text-ink absolute bottom-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium shadow-sm backdrop-blur">
+                    <MapPin className="size-3" aria-hidden /> {debt.city}
                 </span>
                 {debt.phase !== 'open' && (
                     <span className="absolute top-3 left-3">

@@ -4,6 +4,7 @@ import PublicLayout from '@/layouts/public-layout';
 import { fmtDate, useT } from '@/lib/i18n';
 import { mnt, type Debt, type Payment } from '@/lib/zeel';
 import { Link } from '@inertiajs/react';
+import { Plus, Settings, ShieldCheck } from 'lucide-react';
 import { type ReactNode } from 'react';
 
 type Me = { id: number; name: string; is_company: boolean; company_verified: boolean; logo_url: string | null; is_admin: boolean };
@@ -37,7 +38,7 @@ export default function Dashboard({ me, stats, myDebts, myPayments, feed, sugges
                 <div className="flex flex-wrap items-center gap-4">
                     <UserAvatar user={me} size={56} />
                     <div className="min-w-0 flex-1">
-                        <h1 className="truncate text-2xl font-extrabold tracking-tight">{t('dash.hi', { name: me.name })}</h1>
+                        <h1 className="truncate text-2xl font-bold tracking-tight">{t('dash.hi', { name: me.name })}</h1>
                         <p className="text-mute text-sm">{t('dash.subtitle')}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -45,11 +46,11 @@ export default function Dashboard({ me, stats, myDebts, myPayments, feed, sugges
                             {t('dash.seeProfile')}
                         </Link>
                         <Link href={route('profile.edit')} className="btn-ghost !px-4 !py-2 text-sm">
-                            ⚙️ {t('dash.settings')}
+                            <Settings className="size-4" aria-hidden /> {t('dash.settings')}
                         </Link>
                         {me.is_admin && (
                             <Link href={route('admin.index')} className="btn-ghost !px-4 !py-2 text-sm">
-                                🛡️ {t('dash.adminPanel')}
+                                <ShieldCheck className="size-4" aria-hidden /> {t('dash.adminPanel')}
                             </Link>
                         )}
                     </div>
@@ -76,7 +77,7 @@ export default function Dashboard({ me, stats, myDebts, myPayments, feed, sugges
                 {/* Primary actions */}
                 <div className="mt-6 flex flex-wrap gap-3">
                     <Link href={route('debts.create')} className="btn-brand px-6 py-3 text-base">
-                        💙 {t('nav.post')}
+                        <Plus className="size-5" aria-hidden /> {t('nav.post')}
                     </Link>
                     <Link href={route('discover')} className="btn-ghost px-6 py-3 text-base">
                         {t('dash.help')}
@@ -84,7 +85,7 @@ export default function Dashboard({ me, stats, myDebts, myPayments, feed, sugges
                 </div>
 
                 {/* Main grid */}
-                <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_320px]">
+                <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
                     <div className="space-y-6">
                         {/* My requests */}
                         <Panel title={t('dash.myDebts')} action={<Link href={route('debts.create')} className="text-brand text-sm font-semibold">{t('dash.postNew')}</Link>}>
@@ -213,7 +214,7 @@ export default function Dashboard({ me, stats, myDebts, myPayments, feed, sugges
 function StatTile({ to, value, label, accent = false }: { to: string; value: string | number; label: string; accent?: boolean }) {
     return (
         <Link href={to} className="z-card hover:border-brand/40 px-4 py-3 transition hover:-translate-y-0.5">
-            <div className={`text-xl font-extrabold tabular-nums sm:text-2xl ${accent ? 'text-brand' : ''}`}>{value}</div>
+            <div className={`text-xl font-bold tabular-nums sm:text-2xl ${accent ? 'text-brand' : ''}`}>{value}</div>
             <div className="text-mute text-xs">{label}</div>
         </Link>
     );

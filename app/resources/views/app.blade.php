@@ -6,13 +6,14 @@
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700,800&display=swap" rel="stylesheet" />
+
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="icon" href="/brand/favicon.png" type="image/png">
         <link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=montserrat:400,500,600,700,800&display=swap" rel="stylesheet" />
 
         @routes
         @viteReactRefresh

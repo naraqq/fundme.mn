@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Debt;
+use App\Models\Comment;
 use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -30,6 +31,18 @@ class UserProfileController extends Controller
 
         $requests = $user->debts()->withPaid()->public()->latest()->get();
 
+        // Their comments on requests the public can see (not ones under review, rejected or paused).
+        $comments = Comment::where('user_id', $user->id)
+            ->whereHas('debt', fn ($d) => $d->public())
+            ->with('debt:id,name,title')
+            ->latest()->take(50)->get()
+            ->map(fn (Comment $c) => [
+                'id' => $c->id,
+                'body' => $c->body,
+                'at' => $c->created_at->toIso8601String(),
+                'debt' => $c->debt->only('id', 'name', 'title'),
+            ]);
+
         $people = fn ($relation) => $relation->withCount('followers')->latest('follows.created_at')->take(100)->get()
             ->map(fn (User $u) => [...$u->toPublic(), 'followers' => $u->followers_count]);
 
@@ -48,6 +61,7 @@ class UserProfileController extends Controller
             'isFollowing' => $viewer ? $viewer->isFollowing($user) : false,
             'donations' => $donations,
             'requests' => $requests,
+            'comments' => $comments,
             'followers' => $people($user->followers()),
             'followingList' => $people($user->following()),
         ]);

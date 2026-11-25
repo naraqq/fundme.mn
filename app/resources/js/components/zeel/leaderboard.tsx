@@ -94,11 +94,11 @@ export function LeaderboardPage({
 
 function Stat({ label, value, note, className = '' }: StatTile & { className?: string }) {
     return (
-        <div className={`border-line rounded-xl border bg-white px-5 py-4 ${className}`}>
+        <div className={`border-line min-w-0 rounded-xl border bg-white px-4 py-4 sm:px-5 ${className}`}>
             {/* Labels are shared inline phrases ("given publicly"), so capitalise them here. */}
             <dt className="text-mute text-sm first-letter:uppercase">{label}</dt>
             <dd className="mt-1 flex flex-wrap items-baseline gap-x-2">
-                <span className="text-2xl font-semibold tracking-tight tabular-nums">{value}</span>
+                <span className="text-xl font-semibold tracking-tight tabular-nums sm:text-2xl">{value}</span>
                 {note && <span className="text-xs font-medium text-emerald-700">{note}</span>}
             </dd>
         </div>

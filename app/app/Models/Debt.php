@@ -81,6 +81,11 @@ class Debt extends Model
         return $this->hasMany(Payment::class)->latest();
     }
 
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class)->latest();
+    }
+
     public function reports(): HasMany
     {
         return $this->hasMany(Report::class);

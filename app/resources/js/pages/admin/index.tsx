@@ -189,7 +189,7 @@ function ReviewCard({ debt }: { debt: PendingDebt }) {
                     maxLength={300}
                     required
                 />
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <button disabled={processing} className="btn-brand !rounded-xl !px-5 !py-2.5 text-sm">
                         <Check className="size-4" aria-hidden /> {t('ad.approve')}
                     </button>
@@ -427,7 +427,7 @@ function ReportCard({ debt }: { debt: ReportedDebt }) {
                     maxLength={300}
                     required
                 />
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <button
                         type="button"
                         disabled={form.processing || !form.data.note}

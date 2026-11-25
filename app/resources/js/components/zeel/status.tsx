@@ -36,6 +36,11 @@ export function RequestProgress({ debt, compact = false }: { debt: Debt; compact
     return (
         <div className={compact ? '' : 'border-line rounded-xl border bg-white p-5'}>
             {!compact && <h2 className="mb-4 font-semibold">{t('st.title')}</h2>}
+            {/* Four Mongolian labels don't fit side by side on a phone: show the current step instead. */}
+            <p className="mb-2 text-xs font-medium sm:hidden">
+                <span className="text-mute">{t('st.step', { i: current + 1, n: STEPS.length })} · </span>
+                {done ? t('st.sent') : t(`st.${STEPS[current]}`)}
+            </p>
             <ol className="grid grid-cols-4 gap-2">
                 {STEPS.map((step, i) => {
                     const complete = i < current || done;
@@ -44,10 +49,10 @@ export function RequestProgress({ debt, compact = false }: { debt: Debt; compact
                         <li key={step} className="min-w-0">
                             <div className={`h-1.5 rounded-full ${complete ? 'bg-emerald-500' : active ? 'bg-brand' : 'bg-line'}`} />
                             <div
-                                className={`mt-2 flex items-center gap-1 text-xs font-medium ${complete ? 'text-emerald-700' : active ? 'text-ink' : 'text-mute'} ${compact ? 'max-sm:sr-only' : ''}`}
+                                className={`mt-2 flex items-start gap-1 text-xs leading-tight font-medium max-sm:hidden ${complete ? 'text-emerald-700' : active ? 'text-ink' : 'text-mute'}`}
                             >
-                                {complete && <Check className="size-3.5 shrink-0" aria-hidden />}
-                                <span className="truncate">{t(complete && step === 'review' ? 'st.reviewDone' : `st.${step}`)}</span>
+                                {complete && <Check className="mt-px size-3 shrink-0" aria-hidden />}
+                                <span className="min-w-0">{t(complete && step === 'review' ? 'st.reviewDone' : `st.${step}`)}</span>
                             </div>
                         </li>
                     );

@@ -12,5 +12,6 @@
     "You already have an active request. You can post a new one after it is paid out or closed.": "Танд идэвхтэй хүсэлт байна. Түүнийг шилжүүлж дууссан эсвэл хаагдсаны дараа шинийг нийтэлж болно.",
     "New accounts can ask for up to :amount at first.": "Шинэ бүртгэлтэй хэрэглэгч эхлээд :amount хүртэл хүсэх боломжтой.",
     "This request is paused while we review reports about it.": "Энэ хүсэлтэд ирсэн гомдлыг шалгах хүртэл түр зогсоосон.",
-    "This request is paused because of reports. Review it before paying out.": "Гомдлын улмаас түр зогсоосон хүсэлт. Шилжүүлэхээс өмнө шалгана уу."
+    "This request is paused because of reports. Review it before paying out.": "Гомдлын улмаас түр зогсоосон хүсэлт. Шилжүүлэхээс өмнө шалгана уу.",
+    "Comments can’t include links, account or phone numbers. All help goes through fundme.mn.": "Сэтгэгдэлд холбоос, данс эсвэл утасны дугаар бичих боломжгүй. Бүх тусламж fundme.mn-ээр дамжина."
 }
