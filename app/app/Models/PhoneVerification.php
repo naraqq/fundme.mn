@@ -27,12 +27,17 @@ class PhoneVerification extends Model
         return in_array($this->status, ['VERIFIED', 'EXPIRED'], true);
     }
 
-    /** Ask verify.mn for the real status (callbacks are only a "check now" hint). */
-    public function refreshStatus(VerifyMn $api): string
+    /**
+     * Ask verify.mn for the real status (callbacks are only a "check now" hint).
+     * The API client is only built when a remote check is actually needed, so dev-bypass
+     * sessions (already VERIFIED, no session_id) work without a VERIFY_MN_API_KEY.
+     */
+    public function refreshStatus(?VerifyMn $api = null): string
     {
         if ($this->isFinal() || ! $this->session_id) {
             return $this->status;
         }
+        $api ??= app(VerifyMn::class);
 
         try {
             $remote = $api->getSession($this->session_id);

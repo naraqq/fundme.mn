@@ -33,7 +33,7 @@ class PhoneLoginController extends Controller
         ]);
     }
 
-    public function start(Request $request, VerifyMn $api): RedirectResponse
+    public function start(Request $request): RedirectResponse
     {
         $request->validate(['phone' => ['required', 'string', 'max:20']]);
 
@@ -66,7 +66,7 @@ class PhoneLoginController extends Controller
         ]);
 
         try {
-            $session = $api->createSession($phone, $verification->code, $this->callbackUrl($verification));
+            $session = app(VerifyMn::class)->createSession($phone, $verification->code, $this->callbackUrl($verification));
         } catch (VerifyMnException $e) {
             Log::error('verify.mn: could not create session', ['status' => $e->status, 'phone_last4' => substr($phone, -4)]);
             $verification->delete();
@@ -87,18 +87,18 @@ class PhoneLoginController extends Controller
     }
 
     /** Polled by the login page every ~3s. We ask verify.mn server-side. */
-    public function status(Request $request, VerifyMn $api): JsonResponse
+    public function status(Request $request): JsonResponse
     {
         $verification = $this->current($request);
         abort_unless($verification, 404);
 
-        return response()->json(['status' => $verification->refreshStatus($api)]);
+        return response()->json(['status' => $verification->refreshStatus()]);
     }
 
-    public function complete(Request $request, VerifyMn $api): RedirectResponse
+    public function complete(Request $request): RedirectResponse
     {
         $verification = $this->current($request);
-        if (! $verification || $verification->refreshStatus($api) !== 'VERIFIED') {
+        if (! $verification || $verification->refreshStatus() !== 'VERIFIED') {
             return to_route('login')->withErrors(['phone' => __('Your number is not verified yet.')]);
         }
 
@@ -168,7 +168,7 @@ class PhoneLoginController extends Controller
      */
     public function callback(PhoneVerification $verification): \Illuminate\Http\Response
     {
-        dispatch(fn () => $verification->refreshStatus(app(VerifyMn::class)))->afterResponse();
+        dispatch(fn () => $verification->refreshStatus())->afterResponse();
 
         return response('', 200);
     }
