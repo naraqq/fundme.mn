@@ -1,8 +1,8 @@
 import { FollowButton, UserAvatar, type BoardRow, type PublicUser } from '@/components/zeel/people';
-import { Bar, PhaseBadge } from '@/components/zeel/ui';
+import { PaymentStageBadge, RequestProgress } from '@/components/zeel/status';
 import PublicLayout from '@/layouts/public-layout';
 import { fmtDate, useT } from '@/lib/i18n';
-import { catOf, mnt, type Debt, type Payment } from '@/lib/zeel';
+import { mnt, type Debt, type Payment } from '@/lib/zeel';
 import { Link } from '@inertiajs/react';
 import { type ReactNode } from 'react';
 
@@ -92,30 +92,25 @@ export default function Dashboard({ me, stats, myDebts, myPayments, feed, sugges
                                 <Empty icon="📝" text={t('dash.noDebts')} cta={{ href: route('debts.create'), label: t('nav.post') }} />
                             ) : (
                                 <ul className="space-y-3">
-                                    {myDebts.map((d) => {
-                                        const pct = Math.round((d.paid / d.amount) * 100);
-                                        return (
-                                            <li key={d.id}>
-                                                <Link href={route('debts.show', d.id)} className="hover:bg-panel-2 -mx-2 block rounded-xl px-2 py-2 transition">
-                                                    <div className="flex items-center justify-between gap-3">
-                                                        <span className="truncate font-semibold">
-                                                            {catOf(d.category).emoji} {d.title}
-                                                        </span>
-                                                        <PhaseBadge debt={d} />
+                                    {myDebts.map((d) => (
+                                        <li key={d.id}>
+                                            <Link href={route('debts.show', d.id)} className="hover:bg-panel-2 -mx-2 block rounded-xl px-2 py-2.5 transition">
+                                                <div className="flex items-baseline justify-between gap-3">
+                                                    <span className="truncate font-semibold">{d.title}</span>
+                                                    <span className="text-mute shrink-0 text-xs tabular-nums">
+                                                        {mnt(d.paid)} / {mnt(d.amount)}
+                                                    </span>
+                                                </div>
+                                                {d.phase === 'rejected' ? (
+                                                    <p className="mt-1 text-xs text-rose-700">{t('phase.rejected')}</p>
+                                                ) : (
+                                                    <div className="mt-3">
+                                                        <RequestProgress debt={d} compact />
                                                     </div>
-                                                    <div className="mt-2">
-                                                        <Bar value={d.paid} max={d.amount} />
-                                                        <div className="text-mute mt-1 flex justify-between text-xs">
-                                                            <span>{t('card.raised', { amount: mnt(d.paid) })}</span>
-                                                            <span>
-                                                                {pct}% · {t('card.goal', { amount: mnt(d.amount) })}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </Link>
-                                            </li>
-                                        );
-                                    })}
+                                                )}
+                                            </Link>
+                                        </li>
+                                    ))}
                                 </ul>
                             )}
                         </Panel>
@@ -127,15 +122,27 @@ export default function Dashboard({ me, stats, myDebts, myPayments, feed, sugges
                             ) : (
                                 <ul className="divide-line divide-y">
                                     {myPayments.map((p) => (
-                                        <li key={p.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                                            {p.debt ? (
-                                                <Link href={route('debts.show', p.debt.id)} className="hover:text-brand min-w-0 truncate">
-                                                    {p.debt.name} — {p.debt.title}
-                                                </Link>
-                                            ) : (
-                                                <span className="text-mute">{t('dash.removed')}</span>
-                                            )}
-                                            <span className="shrink-0 font-semibold">{mnt(p.amount)}</span>
+                                        <li key={p.id} className="flex items-start justify-between gap-3 py-3 text-sm">
+                                            <div className="min-w-0">
+                                                {p.debt ? (
+                                                    <Link href={route('debts.show', p.debt.id)} className="hover:text-brand block truncate font-medium">
+                                                        {p.debt.name} — {p.debt.title}
+                                                    </Link>
+                                                ) : (
+                                                    <span className="text-mute">{t('dash.removed')}</span>
+                                                )}
+                                                {p.stage && (
+                                                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                                        <PaymentStageBadge stage={p.stage} />
+                                                        <span className="text-mute text-xs">{t(`ps.${p.stage}D`)}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="shrink-0 text-right">
+                                                <div className="font-semibold tabular-nums">{mnt(p.amount)}</div>
+                                                {p.fee ? <div className="text-mute text-[11px] tabular-nums">{t('dash.fee', { amount: mnt(p.fee) })}</div> : null}
+                                                <div className="text-mute text-[11px]">{fmtDate(p.created_at)}</div>
+                                            </div>
                                         </li>
                                     ))}
                                 </ul>

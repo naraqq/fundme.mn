@@ -26,6 +26,7 @@ export interface SharedData {
     quote?: { message: string; author: string };
     flash: { success?: string | null; toast?: FlashToast | null };
     locale: "mn" | "en";
+    feePercent: number;
     auth: Auth;
     [key: string]: unknown;
 }

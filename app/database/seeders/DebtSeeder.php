@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Debt;
 use App\Models\Disbursement;
+use App\Models\Payment;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
@@ -182,6 +184,23 @@ class DebtSeeder extends Seeder
         // A few people follow the companies.
         foreach ($patrons as $p) {
             $p->following()->syncWithoutDetaching($companies->random(2)->pluck('id')->all());
+        }
+
+        // Unconfirmed payments, to show their statuses in patron@example.com's dashboard.
+        // They never count toward totals, progress or leaderboards.
+        $patron = User::where('email', 'patron@example.com')->first();
+        $stillOpen = Debt::withPaid()->open()->get()->filter(fn ($d) => $d->remaining >= 20_000)->values();
+        if ($patron && $stillOpen->count() >= 2) {
+            foreach ([[$stillOpen[0], 20_000, Payment::PENDING], [$stillOpen[1], 15_000, Payment::FAILED]] as [$debt, $amount, $status]) {
+                $debt->payments()->create([
+                    'user_id' => $patron->id,
+                    'payer_name' => $patron->name,
+                    'anonymous' => false,
+                    'amount' => $amount,
+                    'fee' => Payment::feeFor($amount),
+                    'status' => $status,
+                ]);
+            }
         }
 
         // Money already forwarded to creditors, each with a public verification code.

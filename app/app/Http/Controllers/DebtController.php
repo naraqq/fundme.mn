@@ -161,12 +161,15 @@ class DebtController extends Controller
 
             $amount = min($data['amount'], $remaining);
 
-            // TODO: real payment — charge the patron (QPay / card) into the escrow account.
+            // TODO(QPay): create this as Payment::PENDING with a QPay invoice for amount + fee, and mark it
+            // PAID only after QPay confirms. Until then (demo mode) payments are confirmed instantly.
             $debt->payments()->create([
                 'user_id' => $request->user()->id,
                 'payer_name' => $anonymous ? 'Anonymous' : $request->user()->name,
                 'anonymous' => $anonymous,
                 'amount' => $amount,
+                'fee' => Payment::feeFor($amount),
+                'status' => Payment::PAID,
                 'message' => $data['message'] ?? null,
             ]);
 
@@ -189,7 +192,10 @@ class DebtController extends Controller
     public function dashboard(Request $request): Response
     {
         $user = $request->user();
-        $myPayments = $user->payments()->with('debt:id,name,title')->latest()->get();
+        // Includes pending/failed so donors can follow every payment they started.
+        $myPayments = $user->payments()->withUnconfirmed()->with('debt:id,name,title')->latest()->orderByDesc('id')->get();
+        $confirmed = $myPayments->where('status', Payment::PAID);
+        $stages = Payment::stagesFor($myPayments);
         $myDebts = $user->debts()->withPaid()->latest()->get();
 
         return Inertia::render('dashboard', [
@@ -202,8 +208,8 @@ class DebtController extends Controller
                 'is_admin' => (bool) $user->is_admin,
             ],
             'stats' => [
-                'given' => (int) $myPayments->sum('amount'),
-                'helped' => $myPayments->pluck('debt_id')->unique()->count(),
+                'given' => (int) $confirmed->sum('amount'),
+                'helped' => $confirmed->pluck('debt_id')->unique()->count(),
                 'requests' => $myDebts->count(),
                 'followers' => $user->followers()->count(),
                 'following' => $user->following()->count(),
@@ -213,6 +219,9 @@ class DebtController extends Controller
             'myPayments' => $myPayments->map(fn ($p) => [
                 'id' => $p->id,
                 'amount' => $p->amount,
+                'fee' => $p->fee,
+                'stage' => $stages[$p->id],
+                'created_at' => $p->created_at->toIso8601String(),
                 'debt' => $p->debt?->only('id', 'name', 'title'),
             ]),
             ...UserProfileController::feedFor($user),

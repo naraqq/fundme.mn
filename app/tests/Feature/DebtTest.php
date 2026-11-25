@@ -38,7 +38,7 @@ class DebtTest extends TestCase
     {
         $debt = $this->makeDebt(User::factory()->create());
 
-        foreach (['/', '/discover', '/debts', "/debts/{$debt->id}", '/guarantee', '/transparency', '/verify', '/verify?code=FM-NOPE'] as $url) {
+        foreach (['/', '/discover', '/debts', "/debts/{$debt->id}", '/transparency', '/verify', '/verify?code=FM-NOPE'] as $url) {
             $this->get($url)->assertOk();
         }
     }

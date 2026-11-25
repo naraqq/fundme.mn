@@ -39,6 +39,8 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'locale' => fn () => app()->getLocale(),
+            // Donor-paid payment-provider commission, so the pay form can show the exact total.
+            'feePercent' => (float) config('payments.fee_percent'),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'toast' => fn () => $request->session()->get('toast'),

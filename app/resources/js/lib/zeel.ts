@@ -18,9 +18,21 @@ export type Payment = {
     donor_id: number | null;
     anonymous: boolean;
     amount: number;
+    /** Commission the donor paid on top of `amount`. */
+    fee?: number;
+    /** Donor-facing stage (dashboard only). */
+    stage?: PaymentStage;
     message: string | null;
     created_at: string;
     debt?: { id: number; name: string; title: string };
+};
+
+export type PaymentStage = 'pending' | 'failed' | 'collected' | 'sent';
+
+/** Donor-paid commission, rounded up to a whole tugrik. Mirrors Payment::feeFor() in PHP — keep in sync. */
+export const feeFor = (amount: number, percent: number) => {
+    const basisPoints = Math.round(percent * 100);
+    return Math.floor((amount * basisPoints + 9_999) / 10_000);
 };
 
 export type Debt = {

@@ -62,7 +62,11 @@ class Debt extends Model
 
     public function scopeOpen(Builder $q): Builder
     {
-        return $q->public()->whereRaw('amount > (select coalesce(sum(amount), 0) from payments where payments.debt_id = debts.id)');
+        // Only confirmed payments count toward the total (pending QPay payments don't close a request).
+        return $q->public()->whereRaw(
+            'amount > (select coalesce(sum(amount), 0) from payments where payments.debt_id = debts.id and payments.status = ?)',
+            [Payment::PAID],
+        );
     }
 
     public function getPaidAttribute(): int

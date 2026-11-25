@@ -1,5 +1,6 @@
 import PayForm from '@/components/zeel/pay-form';
 import ShareBar from '@/components/zeel/share-bar';
+import { RequestProgress } from '@/components/zeel/status';
 import { MoneyTrail, Receipts, Timeline, VerificationPanel } from '@/components/zeel/transparency-panels';
 import { Avatar, Badges, Bar, Cover } from '@/components/zeel/ui';
 import PublicLayout from '@/layouts/public-layout';
@@ -37,7 +38,8 @@ export default function ShowDebt({ debt, isOwner, shareUrl }: Props) {
                             <Badges debt={debt} />
                         </div>
 
-                        <div className="mt-6">
+                        <div className="mt-6 space-y-4">
+                            <RequestProgress debt={debt} />
                             <VerificationPanel debt={debt} />
                         </div>
 

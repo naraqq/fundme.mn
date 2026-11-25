@@ -2,14 +2,87 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Payment extends Model
 {
-    protected $fillable = ['debt_id', 'user_id', 'payer_name', 'anonymous', 'amount', 'message'];
+    public const PENDING = 'pending';
 
-    protected $casts = ['anonymous' => 'boolean', 'amount' => 'integer'];
+    public const PAID = 'paid';
+
+    public const FAILED = 'failed';
+
+    protected $fillable = ['debt_id', 'user_id', 'payer_name', 'anonymous', 'amount', 'fee', 'status', 'paid_at', 'message'];
+
+    protected $casts = ['anonymous' => 'boolean', 'amount' => 'integer', 'fee' => 'integer', 'paid_at' => 'datetime'];
+
+    protected static function booted(): void
+    {
+        // Only confirmed money counts: totals, progress, leaderboards, transparency, payouts.
+        // Code that must see pending/failed rows (a donor's own history, the QPay callback) uses withUnconfirmed().
+        static::addGlobalScope('paid', fn (Builder $q) => $q->where('payments.status', self::PAID));
+
+        static::creating(function (Payment $p) {
+            $p->status ??= self::PAID;
+            if ($p->status === self::PAID && ! $p->paid_at) {
+                $p->paid_at = now();
+            }
+        });
+    }
+
+    public function scopeWithUnconfirmed(Builder $q): Builder
+    {
+        return $q->withoutGlobalScope('paid');
+    }
+
+    /**
+     * Commission the donor pays on top of a donation, rounded up to a whole tugrik.
+     * Mirrors feeFor() in resources/js/lib/zeel.ts — keep the two in sync.
+     */
+    public static function feeFor(int $amount): int
+    {
+        $basisPoints = (int) round(config('payments.fee_percent') * 100);
+
+        return intdiv($amount * $basisPoints + 9_999, 10_000);
+    }
+
+    /**
+     * Where each donation is, from the donor's point of view:
+     * pending → collected (fundme.mn holds it) → sent (the creditor has it); or failed.
+     * Transfers to the creditor are matched to donations oldest-first.
+     *
+     * @param  \Illuminate\Support\Collection<int, Payment>  $payments
+     * @return array<int, string> payment id => stage
+     */
+    public static function stagesFor(\Illuminate\Support\Collection $payments): array
+    {
+        $debtIds = $payments->pluck('debt_id')->unique()->values();
+        $sentTotal = Disbursement::whereIn('debt_id', $debtIds)->groupBy('debt_id')
+            ->selectRaw('debt_id, sum(amount) as total')->pluck('total', 'debt_id');
+
+        $sent = [];
+        static::whereIn('debt_id', $debtIds)->orderBy('paid_at')->orderBy('id')->get(['id', 'debt_id', 'amount'])
+            ->groupBy('debt_id')
+            ->each(function ($rows, $debtId) use ($sentTotal, &$sent) {
+                $budget = (int) ($sentTotal[$debtId] ?? 0);
+                $running = 0;
+                foreach ($rows as $row) {
+                    $running += $row->amount;
+                    if ($running <= $budget) {
+                        $sent[$row->id] = true;
+                    }
+                }
+            });
+
+        return $payments->mapWithKeys(fn (Payment $p) => [$p->id => match (true) {
+            $p->status === self::PENDING => 'pending',
+            $p->status === self::FAILED => 'failed',
+            isset($sent[$p->id]) => 'sent',
+            default => 'collected',
+        }])->all();
+    }
 
     protected $hidden = ['user_id'];
 
