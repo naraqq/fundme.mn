@@ -12,25 +12,13 @@ import { useEffect, useState } from 'react';
 type Props = { debt: Debt; isOwner: boolean; shareUrl: string };
 
 export default function ShowDebt({ debt, isOwner, shareUrl }: Props) {
-    const { flash } = usePage<SharedData>().props;
     const { t } = useT();
-    const thanks = flash.success?.startsWith('thanks:') ? Number(flash.success.slice(7)) : null;
     const live = debt.status === 'verified';
     const words = (debt.payments ?? []).filter((p) => p.message);
 
     return (
         <PublicLayout title={`${debt.name} — ${debt.title}`}>
             <div className="pt-8 pb-24 lg:pb-8">
-                {thanks !== null && (
-                    <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
-                        {t('show.thanks', { amount: mnt(thanks), name: debt.name })}
-                        {debt.remaining === 0 && t('show.cleared')}
-                    </div>
-                )}
-                {flash.success === 'posted' && (
-                    <div className="border-brand/20 bg-brand-soft text-brand-2 mb-6 rounded-2xl border p-4">{t('show.posted')}</div>
-                )}
-
                 <h1 className="max-w-4xl text-3xl leading-tight font-extrabold tracking-tight sm:text-4xl">{debt.title}</h1>
 
                 <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_380px]">
@@ -239,14 +227,6 @@ function DonateCard({ debt, isOwner, shareUrl }: Props) {
                     )}
                 </div>
             )}
-
-            <Link href={route('guarantee')} className="border-line hover:bg-panel-2 mt-6 flex gap-3 rounded-xl border p-3 transition">
-                <span className="text-xl">🛡️</span>
-                <span className="text-xs leading-snug">
-                    <b className="block text-sm">{t('show.guarantee')}</b>
-                    <span className="text-mute">{t('show.guaranteeSub')}</span>
-                </span>
-            </Link>
         </div>
     );
 }

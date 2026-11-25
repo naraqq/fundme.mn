@@ -38,7 +38,7 @@ class AdminController extends Controller
         abort_unless($user->is_company, 404);
         $user->update(['company_verified' => true]);
 
-        return back();
+        return back()->with('toast', $this->toast('toast.companyVerified', ['name' => $user->name]));
     }
 
     public function bill(Debt $debt): StreamedResponse
@@ -61,7 +61,9 @@ class AdminController extends Controller
             'verified_at' => $data['decision'] === 'verified' ? now() : null,
         ]);
 
-        return back();
+        return back()->with('toast', $data['decision'] === 'verified'
+            ? $this->toast('toast.reviewApproved', ['name' => $debt->name])
+            : $this->toast('toast.reviewRejected', ['name' => $debt->name], 'info'));
     }
 
     public function disburse(Request $request, Debt $debt): RedirectResponse
@@ -84,6 +86,6 @@ class AdminController extends Controller
             'paid_at' => now(),
         ]);
 
-        return back();
+        return back()->with('toast', $this->toast('toast.disbursed', ['amount' => (int) $data['amount'], 'creditor' => $debt->creditor]));
     }
 }

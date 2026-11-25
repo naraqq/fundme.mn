@@ -163,8 +163,9 @@ class DebtSeeder extends Seeder
         ];
         foreach ($companyGifts as $k => [$ci, $who, $amount, $msg]) {
             $debt = $verified->firstWhere('name', $who);
-            // Never over-fund: cap at what's left, keeping at least ₮1 of headroom.
-            $amount = $debt ? min($amount, max(0, $debt->amount - $debt->paid - 1)) : 0;
+            // Never over-fund, and leave a realistic amount open: at most ~60% of what's left, rounded to ₮1,000.
+            $left = $debt ? $debt->amount - $debt->paid : 0;
+            $amount = min($amount, intdiv((int) ($left * 0.6), 1000) * 1000);
             if ($amount < 1000) {
                 continue;
             }

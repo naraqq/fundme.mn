@@ -75,7 +75,6 @@ export default function PublicLayout({ title, children, wide = false }: { title?
                         <Link href={route('companies')}>{t('nav.companies')}</Link>
                     </FooterCol>
                     <FooterCol title={t('foot.trust')}>
-                        <Link href={route('guarantee')}>{t('nav.guarantee')}</Link>
                         <Link href={route('transparency')}>{t('nav.transparency')}</Link>
                         <Link href={route('verify')}>{t('nav.verify')}</Link>
                     </FooterCol>

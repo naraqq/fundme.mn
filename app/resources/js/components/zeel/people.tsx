@@ -82,17 +82,29 @@ export function NameWithBadge({ user, className = '' }: { user: AvatarUser; clas
 }
 
 /** Follow / Following toggle. Optimistic; guests are sent to log in. */
-export function FollowButton({ userId, initial, size = 'md' }: { userId: number; initial: boolean; size?: 'sm' | 'md' }) {
+export function FollowButton({
+    userId,
+    initial,
+    size = 'md',
+    variant = 'solid',
+}: {
+    userId: number;
+    initial: boolean;
+    size?: 'sm' | 'md';
+    /** 'outline' for dense lists, where a solid button on every row is too loud. */
+    variant?: 'solid' | 'outline';
+}) {
     const { t } = useT();
     const { auth } = usePage<SharedData>().props;
     const [following, setFollowing] = useState(initial);
     const [hover, setHover] = useState(false);
     const [busy, setBusy] = useState(false);
     const pad = size === 'sm' ? '!px-3 !py-1 text-xs' : '!px-5 !py-2 text-sm';
+    const idle = variant === 'outline' ? 'btn-ghost !text-brand hover:!border-brand/40' : 'btn-brand';
 
     if (!auth.user) {
         return (
-            <Link href={route('login')} className={`btn-brand ${pad}`} title={t('pf.loginToFollow')}>
+            <Link href={route('login')} className={`${idle} ${pad}`} title={t('pf.loginToFollow')}>
                 {t('pf.follow')}
             </Link>
         );
@@ -115,9 +127,9 @@ export function FollowButton({ userId, initial, size = 'md' }: { userId: number;
             onClick={toggle}
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
-            className={following ? `btn-ghost ${pad} ${hover ? '!border-rose-200 !text-rose-600' : ''}` : `btn-brand ${pad}`}
+            className={following ? `btn-ghost ${pad} ${hover ? '!border-rose-200 !text-rose-600' : ''}` : `${idle} ${pad}`}
         >
-            {following ? (hover ? t('pf.unfollow') : `✓ ${t('pf.following')}`) : `+ ${t('pf.follow')}`}
+            {following ? (hover ? t('pf.unfollow') : `✓ ${t('pf.following')}`) : variant === 'outline' ? t('pf.follow') : `+ ${t('pf.follow')}`}
         </button>
     );
 }

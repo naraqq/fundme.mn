@@ -58,14 +58,14 @@ class UserProfileController extends Controller
         abort_if($request->user()->id === $user->id, 422, 'You cannot follow yourself.');
         $request->user()->following()->syncWithoutDetaching([$user->id]);
 
-        return back();
+        return back()->with('toast', $this->toast('toast.followed', ['name' => $user->name]));
     }
 
     public function unfollow(Request $request, User $user): RedirectResponse
     {
         $request->user()->following()->detach($user->id);
 
-        return back();
+        return back()->with('toast', $this->toast('toast.unfollowed', ['name' => $user->name], 'info'));
     }
 
     public function companies(Request $request): Response
@@ -97,8 +97,9 @@ class UserProfileController extends Controller
             'period' => $period,
             'board' => $board->map(fn ($row) => [...$row, 'isFollowing' => $followingIds->contains($row['user']['id'])]),
             'totals' => [
-                'donors' => Payment::publicNamed()->distinct('user_id')->count('user_id'),
-                'given' => (int) Payment::publicNamed()->sum('amount'),
+                // Individuals only, matching the board above (companies have their own page).
+                'donors' => Payment::publicNamed()->whereHas('user', fn ($u) => $u->where('is_company', false))->distinct('user_id')->count('user_id'),
+                'given' => (int) Payment::publicNamed()->whereHas('user', fn ($u) => $u->where('is_company', false))->sum('amount'),
                 ...User::growth(),
             ],
         ]);

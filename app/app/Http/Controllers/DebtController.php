@@ -129,7 +129,7 @@ class DebtController extends Controller
             'color' => Debt::COLORS[array_rand(Debt::COLORS)],
         ]);
 
-        return to_route('debts.show', $debt)->with('success', 'posted');
+        return to_route('debts.show', $debt)->with('toast', $this->toast('toast.posted', description: 'toast.postedSub'));
     }
 
     public function pay(Request $request, Debt $debt): RedirectResponse
@@ -177,7 +177,13 @@ class DebtController extends Controller
             return back()->withErrors(['amount' => __('This debt is already fully paid 🎉')]);
         }
 
-        return back()->with('success', "thanks:$amount");
+        $cleared = $debt->amount - (int) $debt->payments()->sum('amount') <= 0;
+
+        return back()->with('toast', $this->toast(
+            'toast.paid',
+            ['amount' => $amount, 'name' => $debt->name],
+            description: $cleared ? 'toast.paidCleared' : 'toast.paidSub',
+        ));
     }
 
     public function dashboard(Request $request): Response

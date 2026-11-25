@@ -24,7 +24,6 @@ Route::get('companies', [UserProfileController::class, 'companies'])->name('comp
 Route::get('u/{user}', [UserProfileController::class, 'show'])->whereNumber('user')->name('users.show');
 
 // Transparency: public ledger, receipt verification, receipt files.
-Route::inertia('guarantee', 'guarantee')->name('guarantee');
 Route::get('transparency', [TransparencyController::class, 'index'])->name('transparency');
 Route::get('verify', [TransparencyController::class, 'verify'])->name('verify');
 Route::get('receipts/{disbursement:code}', [TransparencyController::class, 'receipt'])->name('receipts.show');

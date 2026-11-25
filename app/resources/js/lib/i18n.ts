@@ -74,12 +74,26 @@ const en = {
     'disc.done': "You've seen everyone for now.",
     'disc.restart': 'Start over',
     'disc.browse': 'Browse list',
+    'disc.helpBtn': 'Help',
+    'disc.skipBtn': 'Skip',
+    'disc.keys': 'to skip or help',
 
     // show
     'show.back': '← Back to discover',
     'show.thanks': '🎉 Thank you! You paid {amount} to help {name}.',
     'show.cleared': " Their bill is now fully paid!",
     'show.posted': "Your request is posted. We'll review your bill and mark it verified. Share this page to get help faster.",
+    'toast.paid': 'Thank you! You gave {amount} to {name}.',
+    'toast.paidSub': "The money goes straight to their creditor, never to the person. You'll see the receipt here once it's sent.",
+    'toast.paidCleared': 'This bill is now fully paid. You finished it!',
+    'toast.posted': 'Your request is posted',
+    'toast.postedSub': "We'll review your bill and mark it verified. Share this page to get help faster.",
+    'toast.companyVerified': '{name} is now verified',
+    'toast.reviewApproved': 'Request approved: {name}',
+    'toast.reviewRejected': 'Request rejected: {name}',
+    'toast.disbursed': 'Transfer recorded: {amount} → {creditor}',
+    'toast.followed': 'You are now following {name}',
+    'toast.unfollowed': 'Unfollowed {name}',
     'show.total': "Amount needed",
     'show.paidTo': 'Paid directly to',
     'show.patrons': "Donors ({n})",
@@ -246,6 +260,18 @@ const en = {
     'home.ctaStart': "Ask for help — free",
     'home.statLine': '{amount} already paid to creditors · every tugrik is traceable',
     'home.catTitle': 'Browse by category',
+    'home.lead': "fundme.mn lets people in Mongolia ask for help with a real bill: a loan payment, hospital fee, tuition or phone bill. Donors pay the bill directly to the bank, hospital or school, so the money is always used for what it was asked for.",
+    'home.pt1': 'Every bill is checked before it goes live',
+    'home.pt2': 'Money goes to the creditor, never to a personal account',
+    'home.pt3': 'Every transfer has a public receipt',
+    'home.example': 'Needs help now',
+    'home.forTitle': 'Two ways to use fundme.mn',
+    'home.needT': "You have a bill you can't pay",
+    'home.needD': 'Post the bill with a short story. We check it, publish it and show it to donors. Posting is free and the money never passes through your hands.',
+    'home.giveT': 'You want to help someone',
+    'home.giveD': 'Pick a person, pay any amount from ₮1,000, and see the receipt when it reaches their creditor. Give under your name or anonymously.',
+    'home.endT': "Have a bill you can't pay?",
+    'home.endD': 'Posting takes about five minutes and is free.',
     'home.howTitle': 'How fundme.mn works',
     'home.trustTitle': 'Your help is protected',
     'home.trust1': 'Every request is checked against a real bill',
@@ -334,6 +360,11 @@ const en = {
     'lb.seeAll': 'Full leaderboard →',
     'lb.donors': 'named donors',
     'lb.given': 'given publicly',
+    'lb.ranking': 'Ranking',
+    'lb.col.donor': 'Donor',
+    'lb.col.helped': 'Helped',
+    'lb.col.gifts': 'Gifts',
+    'lb.col.total': 'Total given',
     'pf.follow': 'Follow',
     'pf.following': 'Following',
     'pf.unfollow': 'Unfollow',
@@ -468,10 +499,24 @@ const mn: Record<TKey, string> = {
     'disc.done': 'Одоогоор бүгдийг нь үзлээ.',
     'disc.restart': 'Дахин эхлэх',
     'disc.browse': 'Жагсаалт үзэх',
+    'disc.helpBtn': 'Туслах',
+    'disc.skipBtn': 'Алгасах',
+    'disc.keys': 'алгасах эсвэл туслах',
 
     'show.back': '← Танилцах руу буцах',
     'show.thanks': '🎉 Баярлалаа! Та {amount} төлж {name}-д туслалаа.',
     'show.cleared': " Түүний төлбөр бүрэн төлөгдлөө!",
+    'toast.paid': 'Баярлалаа! Та {name}-д {amount} хандивлалаа.',
+    'toast.paidSub': 'Мөнгө хүнд биш, шууд хүлээн авагч байгууллагад очно. Шилжүүлсний дараа баримт энд харагдана.',
+    'toast.paidCleared': 'Энэ төлбөр бүрэн төлөгдлөө. Та дуусгалаа!',
+    'toast.posted': 'Таны хүсэлт нийтлэгдлээ',
+    'toast.postedSub': 'Бид нэхэмжлэлийг шалгаад баталгаажуулна. Илүү хурдан тусламж авахын тулд хуудсаа хуваалцаарай.',
+    'toast.companyVerified': '{name} баталгаажлаа',
+    'toast.reviewApproved': 'Хүсэлт баталгаажлаа: {name}',
+    'toast.reviewRejected': 'Хүсэлт татгалзлаа: {name}',
+    'toast.disbursed': 'Шилжүүлэг бүртгэгдлээ: {amount} → {creditor}',
+    'toast.followed': 'Дагаж эхэллээ: {name}',
+    'toast.unfollowed': 'Дагахаа болилоо: {name}',
     'show.posted': "Таны тусламжийн хүсэлт нийтлэгдлээ. Бид нэхэмжлэлийг шалгаад баталгаажуулна. Илүү хурдан тусламж авахын тулд энэ хуудсаа хуваалцаарай.",
     'show.total': "Шаардлагатай дүн",
     'show.paidTo': 'Шууд төлөгдөх газар',
@@ -625,6 +670,18 @@ const mn: Record<TKey, string> = {
     'home.h1': "Бие биедээ тусалъя",
     'home.sub2': "Нэхэмжлэл, түүхээ хуваалц. Хандивлагчид таны банк, эмнэлэг, сургуульд шууд төлнө. Нийтлэх нь үнэгүй.",
     'home.ctaStart': "Үнэгүй тусламж хүсэх",
+    'home.lead': "fundme.mn дээр зээлийн төлбөр, эмнэлэг, сургалтын төлбөр, утасны төлбөр зэрэг бодит төлбөрөө төлөхөд тусламж хүсэх боломжтой. Хандивлагчид банк, эмнэлэг, сургуульд шууд төлдөг тул мөнгө зөвхөн хүссэн зориулалтаараа зарцуулагдана.",
+    'home.pt1': 'Нэхэмжлэл бүрийг нийтлэхээс өмнө шалгана',
+    'home.pt2': 'Мөнгө хувь хүний дансанд биш, хүлээн авагч байгууллагад очно',
+    'home.pt3': 'Шилжүүлэг бүр нийтэд нээлттэй баримттай',
+    'home.example': 'Яг одоо тусламж хэрэгтэй',
+    'home.forTitle': 'fundme.mn-г хоёр янзаар ашиглана',
+    'home.needT': 'Төлж чадахгүй байгаа төлбөр байна уу',
+    'home.needD': 'Төлбөрөө товч түүхийн хамт нийтэл. Бид шалгаад нийтэлж, хандивлагчдад харуулна. Нийтлэх нь үнэгүй, мөнгө таны гараар дамжихгүй.',
+    'home.giveT': 'Хэн нэгэнд туслахыг хүсэж байна уу',
+    'home.giveD': 'Хүнээ сонгоод ₮1,000-аас дээш дурын дүнгээр төлж, хүлээн авагчид очсон баримтыг нь хар. Нэрээ нээлттэй эсвэл нууцаар хандивлаж болно.',
+    'home.endT': 'Төлж чадахгүй төлбөр байна уу?',
+    'home.endD': 'Нийтлэхэд 5 орчим минут зарцуулах ба үнэгүй.',
     'home.statLine': "Хүлээн авагч байгууллагуудад нийт {amount} төлөгдсөн · төгрөг бүр хянагдана",
     'home.catTitle': 'Ангиллаар үзэх',
     'home.howTitle': 'fundme.mn хэрхэн ажилладаг вэ',
@@ -713,6 +770,11 @@ const mn: Record<TKey, string> = {
     'lb.seeAll': 'Бүх жагсаалт →',
     'lb.donors': 'нэртэй хандивлагч',
     'lb.given': 'нийтэд хандивласан',
+    'lb.ranking': 'Жагсаалт',
+    'lb.col.donor': 'Хандивлагч',
+    'lb.col.helped': 'Тусалсан',
+    'lb.col.gifts': 'Хандив',
+    'lb.col.total': 'Нийт дүн',
     'pf.follow': 'Дагах',
     'pf.following': 'Дагаж байна',
     'pf.unfollow': 'Дагахаа болих',
@@ -780,11 +842,16 @@ const mn: Record<TKey, string> = {
 const DICTS = { en, mn } as const;
 export type Locale = keyof typeof DICTS;
 
+/** Translate without a hook, for code outside components. Falls back to English, then the raw key, so it never crashes. */
+export function translate(locale: string | undefined, key: string, vars: Record<string, string | number> = {}): string {
+    const dict: Record<string, string> = DICTS[(locale ?? 'mn') as Locale] ?? mn;
+    const text = dict[key] ?? (en as Record<string, string>)[key] ?? key;
+    return text.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? `{${k}}`));
+}
+
 export function useT() {
     const locale = (usePage<SharedData>().props.locale ?? 'mn') as Locale;
-    const dict = DICTS[locale] ?? mn;
-    const t = (key: TKey, vars: Record<string, string | number> = {}) =>
-        dict[key].replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? `{${k}}`));
+    const t = (key: TKey, vars: Record<string, string | number> = {}) => translate(locale, key, vars);
     return { t, locale };
 }
 

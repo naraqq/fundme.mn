@@ -24,7 +24,7 @@ export interface NavItem {
 export interface SharedData {
     name: string;
     quote?: { message: string; author: string };
-    flash: { success?: string | null };
+    flash: { success?: string | null; toast?: FlashToast | null };
     locale: "mn" | "en";
     auth: Auth;
     [key: string]: unknown;
@@ -47,4 +47,13 @@ export interface User {
     updated_at: string;
     is_admin?: boolean;
     [key: string]: unknown; // This allows for additional properties...
+}
+
+/** One-time notification flashed by Controller::toast() on the server. */
+export interface FlashToast {
+    id: string;
+    type: 'success' | 'info' | 'error';
+    key: string;
+    vars: Record<string, string | number>;
+    description: string | null;
 }

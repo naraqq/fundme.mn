@@ -39,7 +39,10 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'locale' => fn () => app()->getLocale(),
-            'flash' => ['success' => fn () => $request->session()->get('success')],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'toast' => fn () => $request->session()->get('toast'),
+            ],
             'auth' => [
                 'user' => $request->user(),
             ],
