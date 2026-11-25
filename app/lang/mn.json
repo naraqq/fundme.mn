@@ -8,5 +8,9 @@
     "Enter an 8-digit Mongolian mobile number.": "8 оронтой гар утасны дугаар оруулна уу.",
     "Could not start phone verification. Please try again.": "Утасны баталгаажуулалт эхлүүлж чадсангүй. Дахин оролдоно уу.",
     "Your number is not verified yet.": "Таны дугаар хараахан баталгаажаагүй байна.",
-    "Amount must be at least ₮5,000.": "Дүн хамгийн багадаа ₮5,000 байх ёстой."
+    "Amount must be at least ₮5,000.": "Дүн хамгийн багадаа ₮5,000 байх ёстой.",
+    "You already have an active request. You can post a new one after it is paid out or closed.": "Танд идэвхтэй хүсэлт байна. Түүнийг шилжүүлж дууссан эсвэл хаагдсаны дараа шинийг нийтэлж болно.",
+    "New accounts can ask for up to :amount at first.": "Шинэ бүртгэлтэй хэрэглэгч эхлээд :amount хүртэл хүсэх боломжтой.",
+    "This request is paused while we review reports about it.": "Энэ хүсэлтэд ирсэн гомдлыг шалгах хүртэл түр зогсоосон.",
+    "This request is paused because of reports. Review it before paying out.": "Гомдлын улмаас түр зогсоосон хүсэлт. Шилжүүлэхээс өмнө шалгана уу."
 }

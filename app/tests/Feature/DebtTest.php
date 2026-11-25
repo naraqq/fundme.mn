@@ -53,7 +53,8 @@ class DebtTest extends TestCase
 
     public function test_posting_needs_a_payout_account_not_a_bill_and_starts_pending(): void
     {
-        $user = User::factory()->create();
+        // An established account (new accounts are capped below this amount; see FraudControlsTest).
+        $user = tap(User::factory()->create())->forceFill(['created_at' => now()->subMonth()])->save() ? User::latest('id')->first() : null;
         $fields = [
             'name' => 'Sarnai', 'city' => 'UB', 'title' => 'Rent', 'story' => str_repeat('a', 60),
             'category' => 'rent', 'amount' => '2,700,000',

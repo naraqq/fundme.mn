@@ -31,8 +31,9 @@ Route::get('receipts/{disbursement:code}', [TransparencyController::class, 'rece
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', [DebtController::class, 'dashboard'])->name('dashboard');
     Route::get('debts/new', [DebtController::class, 'create'])->name('debts.create');
-    Route::post('debts', [DebtController::class, 'store'])->name('debts.store');
-    Route::post('debts/{debt}/pay', [DebtController::class, 'pay'])->name('debts.pay');
+    Route::post('debts', [DebtController::class, 'store'])->middleware('throttle:5,60')->name('debts.store');
+    Route::post('debts/{debt}/pay', [DebtController::class, 'pay'])->middleware('throttle:20,1')->name('debts.pay');
+    Route::post('debts/{debt}/report', [DebtController::class, 'report'])->middleware('throttle:10,60')->name('debts.report');
     Route::post('u/{user}/follow', [UserProfileController::class, 'follow'])->middleware('throttle:60,1')->name('users.follow');
     Route::delete('u/{user}/follow', [UserProfileController::class, 'unfollow'])->middleware('throttle:60,1')->name('users.unfollow');
 });
@@ -42,6 +43,7 @@ Route::middleware(['auth', EnsureAdmin::class])->prefix('admin')->name('admin.')
     Route::get('debts/{debt}/bill', [AdminController::class, 'bill'])->name('bill');
     Route::post('debts/{debt}/review', [AdminController::class, 'review'])->name('review');
     Route::post('debts/{debt}/disburse', [AdminController::class, 'disburse'])->name('disburse');
+    Route::post('debts/{debt}/reports/dismiss', [AdminController::class, 'dismissReports'])->name('reports.dismiss');
     Route::post('companies/{user}/verify', [AdminController::class, 'verifyCompany'])->name('companies.verify');
 });
 

@@ -26,12 +26,42 @@ class Debt extends Model
         'amount' => 'integer',
         'age' => 'integer',
         'verified_at' => 'datetime',
+        'flagged_at' => 'datetime',
+        'bank_account' => 'encrypted', // encrypted at rest; bank_account_hash is used to find duplicates
     ];
 
-    protected $appends = ['paid', 'remaining', 'disbursed', 'phase', 'verified', 'photo_url'];
+    protected $appends = ['paid', 'remaining', 'disbursed', 'phase', 'verified', 'paused', 'photo_url'];
 
     // The payout account is private: only the admin panel reads it explicitly (see payoutAccount()).
-    protected $hidden = ['user_id', 'bill_path', 'photo_path', 'paid_sum', 'disbursed_sum', 'bank_name', 'bank_account', 'account_holder'];
+    protected $hidden = [
+        'user_id', 'bill_path', 'photo_path', 'paid_sum', 'disbursed_sum',
+        'bank_name', 'bank_account', 'bank_account_hash', 'account_holder',
+    ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (Debt $debt) {
+            if ($debt->isDirty('bank_account')) {
+                $debt->bank_account_hash = $debt->bank_account ? static::fingerprint($debt->bank_account) : null;
+            }
+        });
+    }
+
+    /**
+     * Keyed fingerprint of an account number, so the same account can be found on other requests
+     * without storing it in plain text. Ignores spaces, dashes and letter case.
+     */
+    public static function fingerprint(string $account): string
+    {
+        return hash_hmac('sha256', strtoupper(preg_replace('/[\s-]/', '', $account)), (string) config('app.key'));
+    }
+
+    /** A request still in play: under review, collecting, or collected but not yet fully paid out. */
+    public static function activeFor(User $user): ?Debt
+    {
+        return $user->debts()->withPaid()->whereIn('status', ['pending', 'verified'])->latest()->get()
+            ->first(fn (Debt $d) => in_array($d->phase, ['pending', 'open', 'funded'], true));
+    }
 
     /** Where collected donations go. Admin-only. */
     public function payoutAccount(): ?array
@@ -51,6 +81,11 @@ class Debt extends Model
         return $this->hasMany(Payment::class)->latest();
     }
 
+    public function reports(): HasMany
+    {
+        return $this->hasMany(Report::class);
+    }
+
     public function disbursements(): HasMany
     {
         return $this->hasMany(Disbursement::class)->latest('paid_at');
@@ -64,10 +99,10 @@ class Debt extends Model
             ->withCount('payments');
     }
 
-    /** Only reviewed debts are shown to the public or accept money. */
+    /** Only reviewed debts that aren't paused by reports are shown to the public or accept money. */
     public function scopePublic(Builder $q): Builder
     {
-        return $q->where('status', 'verified');
+        return $q->where('status', 'verified')->whereNull('flagged_at');
     }
 
     public function scopeOpen(Builder $q): Builder
@@ -104,6 +139,17 @@ class Debt extends Model
         return $this->status === 'verified';
     }
 
+    /** Paused after reports: hidden from the public, no donations, no payouts until an admin decides. */
+    public function getPausedAttribute(): bool
+    {
+        return $this->flagged_at !== null;
+    }
+
+    public function acceptsMoney(): bool
+    {
+        return $this->status === 'verified' && ! $this->paused;
+    }
+
     /** pending → open → funded (all collected) → settled (all paid out to the requester); or rejected. */
     public function getPhaseAttribute(): string
     {
@@ -119,6 +165,6 @@ class Debt extends Model
 
     public function isVisibleTo(?User $user): bool
     {
-        return $this->status === 'verified' || ($user && ($user->is_admin || $user->id === $this->user_id));
+        return $this->acceptsMoney() || ($user && ($user->is_admin || $user->id === $this->user_id));
     }
 }

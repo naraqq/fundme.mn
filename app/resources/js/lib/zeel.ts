@@ -47,6 +47,8 @@ export type Debt = {
     creditor: string | null;
     amount: number;
     verified: boolean;
+    /** Paused after reports: hidden from the public, no donations or payouts until an admin decides. */
+    paused: boolean;
     status: 'pending' | 'verified' | 'rejected';
     phase: Phase;
     verified_at: string | null;

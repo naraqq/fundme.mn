@@ -1,4 +1,5 @@
 import PayForm from '@/components/zeel/pay-form';
+import ReportRequest from '@/components/zeel/report-request';
 import ShareBar from '@/components/zeel/share-bar';
 import { RequestProgress } from '@/components/zeel/status';
 import { MoneyTrail, Receipts, Timeline, VerificationPanel } from '@/components/zeel/transparency-panels';
@@ -12,14 +13,20 @@ import { useEffect, useState } from 'react';
 
 type Props = { debt: Debt; isOwner: boolean; shareUrl: string };
 
-export default function ShowDebt({ debt, isOwner, shareUrl }: Props) {
+export default function ShowDebt({ debt, isOwner, shareUrl, reportReasons, reported }: Props & { reportReasons: string[]; reported: boolean }) {
     const { t } = useT();
-    const live = debt.status === 'verified';
+    // Paused (reported) requests take no money; only the owner and admins can even see them.
+    const live = debt.status === 'verified' && !debt.paused;
     const words = (debt.payments ?? []).filter((p) => p.message);
 
     return (
         <PublicLayout title={`${debt.name} — ${debt.title}`}>
             <div className="pt-8 pb-24 lg:pb-8">
+                {debt.paused && (
+                    <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                        <b className="font-semibold">{t('rep.pausedTitle')}</b> {t('rep.pausedD')}
+                    </div>
+                )}
                 <h1 className="max-w-4xl text-3xl leading-tight font-extrabold tracking-tight sm:text-4xl">{debt.title}</h1>
 
                 <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_380px]">
@@ -88,6 +95,7 @@ export default function ShowDebt({ debt, isOwner, shareUrl }: Props) {
                     {/* ── Sticky donate card ── */}
                     <aside className="lg:sticky lg:top-24 lg:h-fit">
                         <DonateCard debt={debt} isOwner={isOwner} shareUrl={shareUrl} />
+                        {live && !isOwner && <ReportRequest debtId={debt.id} reasons={reportReasons} reported={reported} />}
                     </aside>
                 </div>
             </div>
@@ -126,7 +134,7 @@ function DonateCard({ debt, isOwner, shareUrl }: Props) {
     const { t } = useT();
     const { auth } = usePage<SharedData>().props;
     const payments = debt.payments ?? [];
-    const live = debt.status === 'verified';
+    const live = debt.status === 'verified' && !debt.paused;
     const [paying, setPaying] = useState(false);
     const [showAll, setShowAll] = useState(false);
     const [copied, setCopied] = useState(false);

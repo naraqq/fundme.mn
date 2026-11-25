@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Debt;
+use App\Models\AdminAction;
 use App\Models\Payment;
+use App\Models\Report;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -92,12 +94,51 @@ class DebtController extends Controller
             // Fetched separately so the owner's phone/email never get serialized with the debt.
             'owner' => $debt->user()->first(['id', 'name'])?->only('id', 'name'),
             'shareUrl' => route('debts.show', $debt),
+            'reportReasons' => config('fraud.report_reasons'),
+            'reported' => $request->user() ? $debt->reports()->where('user_id', $request->user()->id)->exists() : false,
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
-        return Inertia::render('debts/create', ['banks' => config('payments.banks')]);
+        $active = Debt::activeFor($request->user());
+
+        return Inertia::render('debts/create', [
+            'banks' => config('payments.banks'),
+            // One request at a time: show the current one instead of the form.
+            'active' => $active?->only('id', 'title', 'phase'),
+            'newAccountMax' => $this->isNewAccount($request->user()) ? config('fraud.new_account_max') : null,
+        ]);
+    }
+
+    private function isNewAccount(User $user): bool
+    {
+        return $user->created_at?->gt(now()->subDays(config('fraud.new_account_days'))) ?? true;
+    }
+
+    /** Anyone signed in (except the owner) can report a request; enough reports pause it for an admin. */
+    public function report(Request $request, Debt $debt): RedirectResponse
+    {
+        abort_unless($debt->status === 'verified', 404);
+        abort_if($request->user()->id === $debt->user_id, 403);
+
+        $data = $request->validate([
+            'reason' => ['required', Rule::in(config('fraud.report_reasons'))],
+            'details' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        Report::updateOrCreate(
+            ['debt_id' => $debt->id, 'user_id' => $request->user()->id],
+            [...$data, 'resolved_at' => null],
+        );
+
+        $reporters = $debt->reports()->open()->distinct('user_id')->count('user_id');
+        if (! $debt->paused && $reporters >= config('fraud.auto_pause_reports')) {
+            $debt->forceFill(['flagged_at' => now()])->save();
+            AdminAction::log('auto_paused', $debt, details: ['reports' => $reporters]);
+        }
+
+        return back()->with('toast', $this->toast('toast.reported', description: 'toast.reportedSub'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -128,7 +169,15 @@ class DebtController extends Controller
             'bank_account.regex' => __('Enter a valid account number (digits only, or an MN IBAN).'),
         ]);
 
-        $debt = $request->user()->debts()->create([
+        $user = $request->user();
+        if (Debt::activeFor($user)) {
+            return back()->withErrors(['active' => __('You already have an active request. You can post a new one after it is paid out or closed.')]);
+        }
+        if ($this->isNewAccount($user) && $data['amount'] > config('fraud.new_account_max')) {
+            return back()->withErrors(['amount' => __('New accounts can ask for up to :amount at first.', ['amount' => '₮'.number_format(config('fraud.new_account_max'))])]);
+        }
+
+        $debt = $user->debts()->create([
             ...collect($data)->except('bill', 'photo')->all(),
             'bank_account' => strtoupper($data['bank_account']),
             'photo_path' => $request->file('photo')?->store('photos', 'public'),
@@ -152,6 +201,9 @@ class DebtController extends Controller
 
         if ($debt->status !== 'verified') {
             return back()->withErrors(['amount' => __('This debt has not been verified yet.')]);
+        }
+        if ($debt->paused) {
+            return back()->withErrors(['amount' => __('This request is paused while we review reports about it.')]);
         }
         if ($request->user()->id === $debt->user_id) {
             return back()->withErrors(['amount' => __("You can't pay your own debt here.")]);

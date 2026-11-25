@@ -1,13 +1,38 @@
 import PublicLayout from '@/layouts/public-layout';
 import { useT } from '@/lib/i18n';
-import { CATEGORIES, type Category } from '@/lib/zeel';
-import { useForm } from '@inertiajs/react';
+import { CATEGORIES, mnt, type Category } from '@/lib/zeel';
+import { Link, useForm } from '@inertiajs/react';
 import { Lock } from 'lucide-react';
 import { type FormEvent, type ReactNode } from 'react';
 
-export default function CreateDebt({ banks }: { banks: string[] }) {
+type Active = { id: number; title: string; phase: string };
+
+export default function CreateDebt({ banks, active, newAccountMax }: { banks: string[]; active: Active | null; newAccountMax: number | null }) {
+    if (active) return <ActiveRequest active={active} />;
+    return <RequestForm banks={banks} newAccountMax={newAccountMax} />;
+}
+
+/** One request at a time: point people to the one they already have. */
+function ActiveRequest({ active }: { active: Active }) {
     const { t } = useT();
-    const { data, setData, post, processing, errors } = useForm({
+    return (
+        <PublicLayout title={t('post.title')}>
+            <div className="mx-auto max-w-xl py-16">
+                <div className="border-line rounded-xl border bg-white p-8 text-center">
+                    <h1 className="text-2xl font-bold tracking-tight">{t('post.activeTitle')}</h1>
+                    <p className="text-mute mt-2">{t('post.activeD')}</p>
+                    <Link href={route('debts.show', active.id)} className="bg-panel-2 hover:bg-line mt-6 block rounded-lg px-4 py-3 font-medium transition">
+                        {active.title} →
+                    </Link>
+                </div>
+            </div>
+        </PublicLayout>
+    );
+}
+
+function RequestForm({ banks, newAccountMax }: { banks: string[]; newAccountMax: number | null }) {
+    const { t } = useT();
+    const { data, setData, post, processing, errors: formErrors } = useForm({
         name: '',
         age: '',
         city: '',
@@ -21,6 +46,7 @@ export default function CreateDebt({ banks }: { banks: string[] }) {
         bill: null as File | null,
         photo: null as File | null,
     });
+    const errors = formErrors as typeof formErrors & { active?: string };
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -82,6 +108,7 @@ export default function CreateDebt({ banks }: { banks: string[] }) {
                                 value={data.amount ? Number(data.amount).toLocaleString('en-US') : ''}
                                 onChange={(e) => setData('amount', e.target.value.replace(/\D/g, ''))}
                             />,
+                            newAccountMax ? t('post.newAccountMax', { amount: mnt(newAccountMax) }) : undefined,
                         )}
 
                         {field('title', t('post.headline'), text('title', { required: true, maxLength: 70, placeholder: t('post.headlinePh') }))}
@@ -142,6 +169,7 @@ export default function CreateDebt({ banks }: { banks: string[] }) {
                         )}
                     </section>
 
+                    {errors.active && <p className="rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-700">{errors.active}</p>}
                     <button disabled={processing} className="btn-brand w-full !rounded-xl !py-3">
                         {processing ? t('post.posting') : t('nav.post')}
                     </button>

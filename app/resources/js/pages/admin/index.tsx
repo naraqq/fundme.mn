@@ -1,16 +1,29 @@
 import { UserAvatar } from '@/components/zeel/people';
 import PublicLayout from '@/layouts/public-layout';
-import { fmtDate, useT } from '@/lib/i18n';
+import { fmtDate, useT, type TKey } from '@/lib/i18n';
 import { mnt, type Debt } from '@/lib/zeel';
 import { Link, useForm } from '@inertiajs/react';
-import { Check, Copy, FileText, Globe, Landmark, Phone, X } from 'lucide-react';
+import { AlertTriangle, Check, Copy, FileText, Globe, Landmark, Phone, X } from 'lucide-react';
 import { type FormEvent, type ReactNode, useState } from 'react';
 
 type Owner = { id: number; name: string; email: string | null; phone: string | null };
 /** Where collected donations are sent: the requester's own account (admin-only). */
 type Payout = { bank: string | null; account: string; holder: string | null };
-type PendingDebt = Debt & { owner: Owner | null; has_bill: boolean; payout: Payout | null };
-type PayoutDebt = Debt & { payout: Payout | null; phone: string | null };
+/** Warning sign from the server: [code, details]. */
+type Risk = [string, Record<string, unknown>];
+type PendingDebt = Debt & { owner: Owner | null; has_bill: boolean; payout: Payout | null; risks: Risk[] };
+type PayoutDebt = PendingDebt;
+type ReportItem = { id: number; reason: string; details: string | null; by: { id: number; name: string } | null; at: string };
+type ReportedDebt = PendingDebt & { reports: ReportItem[] };
+type HistoryItem = {
+    id: number;
+    action: string;
+    at: string;
+    admin: string | null;
+    debt: { id: number; name: string; title: string } | null;
+    subject: string | null;
+    details: Record<string, string | number> | null;
+};
 type PendingCompany = {
     id: number;
     name: string;
@@ -21,13 +34,32 @@ type PendingCompany = {
     is_company: boolean;
 };
 
-type Tab = 'review' | 'transfers' | 'companies';
+const TABS = ['review', 'reports', 'transfers', 'companies', 'history'] as const;
+type Tab = (typeof TABS)[number];
 
-export default function Admin({ pending, toDisburse, pendingCompanies }: { pending: PendingDebt[]; toDisburse: PayoutDebt[]; pendingCompanies: PendingCompany[] }) {
+export default function Admin({
+    pending,
+    toDisburse,
+    reported,
+    pendingCompanies,
+    history,
+}: {
+    pending: PendingDebt[];
+    toDisburse: PayoutDebt[];
+    reported: ReportedDebt[];
+    pendingCompanies: PendingCompany[];
+    history: HistoryItem[];
+}) {
     const { t } = useT();
-    const counts: Record<Tab, number> = { review: pending.length, transfers: toDisburse.length, companies: pendingCompanies.length };
+    const counts: Record<Tab, number> = {
+        review: pending.length,
+        reports: reported.length,
+        transfers: toDisburse.length,
+        companies: pendingCompanies.length,
+        history: 0,
+    };
     // Open on the first queue that has work waiting.
-    const [tab, setTab] = useState<Tab>((['review', 'transfers', 'companies'] as const).find((k) => counts[k] > 0) ?? 'review');
+    const [tab, setTab] = useState<Tab>(TABS.find((k) => counts[k] > 0) ?? 'review');
 
     return (
         <PublicLayout title={t('nav.admin')}>
@@ -37,8 +69,8 @@ export default function Admin({ pending, toDisburse, pendingCompanies }: { pendi
                     <p className="text-mute mt-2 text-[15px]">{t('ad.sub')}</p>
                 </header>
 
-                <nav className="border-line mt-8 flex gap-1 border-b">
-                    {(['review', 'transfers', 'companies'] as const).map((k) => (
+                <nav className="border-line mt-8 flex gap-1 overflow-x-auto border-b">
+                    {TABS.map((k) => (
                         <button
                             key={k}
                             type="button"
@@ -46,11 +78,13 @@ export default function Admin({ pending, toDisburse, pendingCompanies }: { pendi
                             className={`-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2.5 text-sm font-medium transition ${tab === k ? 'border-ink text-ink' : 'text-mute hover:text-ink border-transparent'}`}
                         >
                             {t(`ad.tab.${k}`)}
-                            <span
-                                className={`rounded-full px-1.5 py-0.5 text-xs tabular-nums ${counts[k] > 0 ? 'bg-brand text-white' : 'bg-panel-2 text-mute'}`}
-                            >
-                                {counts[k]}
-                            </span>
+                            {k !== 'history' && (
+                                <span
+                                    className={`rounded-full px-1.5 py-0.5 text-xs tabular-nums ${counts[k] > 0 ? (k === 'reports' ? 'bg-amber-500 text-white' : 'bg-brand text-white') : 'bg-panel-2 text-mute'}`}
+                                >
+                                    {counts[k]}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </nav>
@@ -59,6 +93,11 @@ export default function Admin({ pending, toDisburse, pendingCompanies }: { pendi
                     {tab === 'review' && (
                         <Queue empty={t('ad.noPending')} items={pending}>
                             {(d) => <ReviewCard key={d.id} debt={d} />}
+                        </Queue>
+                    )}
+                    {tab === 'reports' && (
+                        <Queue empty={t('ad.noReports')} items={reported}>
+                            {(d) => <ReportCard key={d.id} debt={d} />}
                         </Queue>
                     )}
                     {tab === 'transfers' && (
@@ -71,6 +110,7 @@ export default function Admin({ pending, toDisburse, pendingCompanies }: { pendi
                             {(c) => <CompanyRow key={c.id} company={c} />}
                         </Queue>
                     )}
+                    {tab === 'history' && <History items={history} />}
                 </div>
             </div>
         </PublicLayout>
@@ -137,6 +177,7 @@ function ReviewCard({ debt }: { debt: PendingDebt }) {
                 )}
             </div>
 
+            <Risks risks={debt.risks} />
             <PayoutAccount payout={debt.payout} />
 
             <form className="mt-4 flex flex-col gap-2 sm:flex-row" onSubmit={decide('verified')}>
@@ -188,9 +229,9 @@ function TransferRow({ debt }: { debt: PayoutDebt }) {
                     <Link href={route('debts.show', debt.id)} className="hover:text-brand font-semibold">
                         {debt.name} — {debt.title}
                     </Link>
-                    {debt.phone && (
+                    {debt.owner?.phone && (
                         <div className="text-mute mt-0.5 text-sm">
-                            <Contact email={null} phone={debt.phone} />
+                            <Contact email={null} phone={debt.owner.phone} />
                         </div>
                     )}
                 </div>
@@ -201,6 +242,7 @@ function TransferRow({ debt }: { debt: PayoutDebt }) {
                 </dl>
             </div>
 
+            <Risks risks={debt.risks} />
             <PayoutAccount payout={debt.payout} />
 
             <div className="mt-4 grid gap-2 sm:grid-cols-[9rem_1fr_1fr_auto]">
@@ -304,5 +346,134 @@ function PayoutAccount({ payout }: { payout: Payout | null }) {
                 {copied ? <Check className="size-3.5 text-emerald-600" aria-hidden /> : <Copy className="text-mute size-3.5" aria-hidden />}
             </button>
         </div>
+    );
+}
+
+/** Warning signs, worst first, in plain words. */
+function Risks({ risks }: { risks: Risk[] }) {
+    const { t } = useT();
+    if (risks.length === 0) return null;
+
+    return (
+        <ul className="mt-4 space-y-1.5">
+            {risks.map(([code, d]) => (
+                <li key={code} className="flex items-start gap-2 rounded-lg bg-amber-50 px-3.5 py-2 text-sm text-amber-900">
+                    <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600" aria-hidden />
+                    <span>
+                        {t(`risk.${code}` as TKey, { n: Number(d.n ?? 0), days: Number(d.days ?? 0), holder: String(d.holder ?? '') })}
+                        {code === 'shared_account' &&
+                            (d.requests as { id: number; name: string; title: string }[]).map((r) => (
+                                <Link key={r.id} href={route('debts.show', r.id)} className="ml-1.5 font-medium underline">
+                                    #{r.id} {r.name}
+                                </Link>
+                            ))}
+                    </span>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+/** A reported or paused request: what people said, and the admin's decision. */
+function ReportCard({ debt }: { debt: ReportedDebt }) {
+    const { t } = useT();
+    const form = useForm({ note: '', decision: 'rejected' as const });
+
+    return (
+        <article className={`rounded-xl border bg-white p-5 ${debt.paused ? 'border-amber-300' : 'border-line'}`}>
+            <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+                <div className="min-w-0">
+                    <Link href={route('debts.show', debt.id)} className="hover:text-brand text-lg font-semibold">
+                        {debt.name} — {debt.title}
+                    </Link>
+                    <div className="text-mute mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                        {debt.paused ? (
+                            <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">{t('ad.paused')}</span>
+                        ) : (
+                            <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">{t('ad.stillLive')}</span>
+                        )}
+                        <span>
+                            {mnt(debt.paid)} / {mnt(debt.amount)}
+                        </span>
+                        {debt.owner && <Contact email={debt.owner.email} phone={debt.owner.phone} />}
+                    </div>
+                </div>
+            </div>
+
+            <ul className="border-line divide-line mt-4 divide-y rounded-lg border">
+                {debt.reports.map((r) => (
+                    <li key={r.id} className="px-3.5 py-2.5 text-sm">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                            <span className="font-medium">{t(`rep.r.${r.reason}` as TKey)}</span>
+                            <span className="text-mute text-xs">
+                                {r.by?.name} · {fmtDate(r.at)}
+                            </span>
+                        </div>
+                        {r.details && <p className="text-mute mt-1">{r.details}</p>}
+                    </li>
+                ))}
+                {debt.reports.length === 0 && <li className="text-mute px-3.5 py-2.5 text-sm">{t('ad.noOpenReports')}</li>}
+            </ul>
+
+            <Risks risks={debt.risks.filter(([code]) => code !== 'reports')} />
+            <PayoutAccount payout={debt.payout} />
+
+            <form className="mt-4 flex flex-col gap-2 sm:flex-row" onSubmit={(e) => e.preventDefault()}>
+                <input
+                    className="z-input flex-1"
+                    placeholder={t('ad.decisionPh')}
+                    value={form.data.note}
+                    onChange={(e) => form.setData('note', e.target.value)}
+                    maxLength={300}
+                    required
+                />
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        disabled={form.processing || !form.data.note}
+                        onClick={() => form.post(route('admin.reports.dismiss', debt.id), { preserveScroll: true })}
+                        className="btn-ghost !rounded-xl !px-5 !py-2.5 text-sm"
+                    >
+                        <Check className="size-4" aria-hidden /> {t('ad.keepLive')}
+                    </button>
+                    <button
+                        type="button"
+                        disabled={form.processing || !form.data.note}
+                        onClick={() => form.post(route('admin.review', debt.id), { preserveScroll: true })}
+                        className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:opacity-40"
+                    >
+                        <X className="size-4" aria-hidden /> {t('ad.rejectRequest')}
+                    </button>
+                </div>
+            </form>
+            {form.errors.note && <p className="mt-1 text-sm text-rose-600">{form.errors.note}</p>}
+        </article>
+    );
+}
+
+/** Audit log: every decision, who made it and when. */
+function History({ items }: { items: HistoryItem[] }) {
+    const { t } = useT();
+    if (items.length === 0) {
+        return <p className="text-mute border-line rounded-xl border border-dashed p-12 text-center">{t('ad.noHistory')}</p>;
+    }
+    return (
+        <ol className="border-line divide-line divide-y rounded-xl border bg-white">
+            {items.map((a) => (
+                <li key={a.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-5 py-3 text-sm">
+                    <span className="text-mute w-24 shrink-0 text-xs tabular-nums">{fmtDate(a.at)}</span>
+                    <span className="font-medium">{t(`hist.${a.action}` as TKey)}</span>
+                    {a.debt && (
+                        <Link href={route('debts.show', a.debt.id)} className="text-brand hover:underline">
+                            {a.debt.name} — {a.debt.title}
+                        </Link>
+                    )}
+                    {a.subject && <span>{a.subject}</span>}
+                    {a.details?.amount !== undefined && <span className="tabular-nums">{mnt(Number(a.details.amount))}</span>}
+                    {a.details?.note && <span className="text-mute">“{a.details.note}”</span>}
+                    <span className="text-mute ml-auto text-xs">{a.admin ?? t('hist.system')}</span>
+                </li>
+            ))}
+        </ol>
     );
 }
