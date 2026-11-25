@@ -3,11 +3,14 @@ import PublicLayout from '@/layouts/public-layout';
 import { fmtDate, useT } from '@/lib/i18n';
 import { mnt, type Debt } from '@/lib/zeel';
 import { Link, useForm } from '@inertiajs/react';
-import { Check, FileText, Globe, Phone, X } from 'lucide-react';
+import { Check, Copy, FileText, Globe, Landmark, Phone, X } from 'lucide-react';
 import { type FormEvent, type ReactNode, useState } from 'react';
 
 type Owner = { id: number; name: string; email: string | null; phone: string | null };
-type PendingDebt = Debt & { owner: Owner | null; has_bill: boolean };
+/** Where collected donations are sent: the requester's own account (admin-only). */
+type Payout = { bank: string | null; account: string; holder: string | null };
+type PendingDebt = Debt & { owner: Owner | null; has_bill: boolean; payout: Payout | null };
+type PayoutDebt = Debt & { payout: Payout | null; phone: string | null };
 type PendingCompany = {
     id: number;
     name: string;
@@ -20,7 +23,7 @@ type PendingCompany = {
 
 type Tab = 'review' | 'transfers' | 'companies';
 
-export default function Admin({ pending, toDisburse, pendingCompanies }: { pending: PendingDebt[]; toDisburse: Debt[]; pendingCompanies: PendingCompany[] }) {
+export default function Admin({ pending, toDisburse, pendingCompanies }: { pending: PendingDebt[]; toDisburse: PayoutDebt[]; pendingCompanies: PendingCompany[] }) {
     const { t } = useT();
     const counts: Record<Tab, number> = { review: pending.length, transfers: toDisburse.length, companies: pendingCompanies.length };
     // Open on the first queue that has work waiting.
@@ -112,7 +115,6 @@ function ReviewCard({ debt }: { debt: PendingDebt }) {
                     </Link>
                     <div className="text-mute mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm">
                         <span>{t(`cat.${debt.category}`)}</span>
-                        <span>→ {debt.creditor}</span>
                         <span>{fmtDate(debt.created_at)}</span>
                     </div>
                 </div>
@@ -134,6 +136,8 @@ function ReviewCard({ debt }: { debt: PendingDebt }) {
                     </a>
                 )}
             </div>
+
+            <PayoutAccount payout={debt.payout} />
 
             <form className="mt-4 flex flex-col gap-2 sm:flex-row" onSubmit={decide('verified')}>
                 <input
@@ -163,7 +167,7 @@ function ReviewCard({ debt }: { debt: PendingDebt }) {
     );
 }
 
-function TransferRow({ debt }: { debt: Debt }) {
+function TransferRow({ debt }: { debt: PayoutDebt }) {
     const { t } = useT();
     const available = debt.paid - debt.disbursed;
     const { data, setData, post, processing, errors, reset } = useForm<{ amount: number; reference: string; receipt: File | null }>({
@@ -181,10 +185,14 @@ function TransferRow({ debt }: { debt: Debt }) {
         <form onSubmit={submit} className="border-line rounded-xl border bg-white p-5">
             <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
                 <div className="min-w-0">
-                    <div className="font-semibold">{debt.creditor}</div>
-                    <Link href={route('debts.show', debt.id)} className="text-mute hover:text-brand text-sm">
+                    <Link href={route('debts.show', debt.id)} className="hover:text-brand font-semibold">
                         {debt.name} — {debt.title}
                     </Link>
+                    {debt.phone && (
+                        <div className="text-mute mt-0.5 text-sm">
+                            <Contact email={null} phone={debt.phone} />
+                        </div>
+                    )}
                 </div>
                 <dl className="flex gap-5 text-right text-sm">
                     <Money label={t('show.collected')} value={debt.paid} />
@@ -192,6 +200,8 @@ function TransferRow({ debt }: { debt: Debt }) {
                     <Money label={t('ad.availableLabel')} value={available} strong />
                 </dl>
             </div>
+
+            <PayoutAccount payout={debt.payout} />
 
             <div className="mt-4 grid gap-2 sm:grid-cols-[9rem_1fr_1fr_auto]">
                 <label className="relative">
@@ -261,6 +271,37 @@ function CompanyRow({ company }: { company: PendingCompany }) {
                 className="btn-brand !rounded-xl !px-5 !py-2.5 text-sm"
             >
                 <Check className="size-4" aria-hidden /> {t('ad.verifyCompany')}
+            </button>
+        </div>
+    );
+}
+
+/** The requester's bank account, with a one-click copy of the account number. */
+function PayoutAccount({ payout }: { payout: Payout | null }) {
+    const { t } = useT();
+    const [copied, setCopied] = useState(false);
+
+    if (!payout) {
+        return <p className="mt-4 rounded-lg bg-amber-50 px-3.5 py-2.5 text-sm text-amber-800">{t('ad.noPayout')}</p>;
+    }
+
+    function copy() {
+        navigator.clipboard?.writeText(payout!.account).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        });
+    }
+
+    return (
+        <div className="border-line mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border px-3.5 py-2.5 text-sm">
+            <span className="text-mute inline-flex items-center gap-1.5">
+                <Landmark className="size-4" aria-hidden /> {t('ad.payTo')}
+            </span>
+            <span className="font-medium">{payout.holder}</span>
+            <span className="text-mute">{payout.bank}</span>
+            <button type="button" onClick={copy} className="hover:text-brand inline-flex items-center gap-1.5 font-mono tracking-wide" title={t('ad.copy')}>
+                {payout.account}
+                {copied ? <Check className="size-3.5 text-emerald-600" aria-hidden /> : <Copy className="text-mute size-3.5" aria-hidden />}
             </button>
         </div>
     );

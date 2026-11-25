@@ -10,7 +10,7 @@ type LedgerRow = {
     amount: number;
     who?: string | null;
     code?: string;
-    debt: { id: number; name: string; creditor: string } | null;
+    debt: { id: number; name: string } | null;
 };
 
 type Props = {
@@ -61,7 +61,7 @@ export default function Transparency({ totals, ledger }: Props) {
                                             <Link href={route('debts.show', r.debt.id)} className="hover:text-brand-2 block truncate">
                                                 {r.type === 'in'
                                                     ? t('tr.inLine', { who: r.who ?? t('anonymous'), name: r.debt.name })
-                                                    : t('tr.outLine', { creditor: r.debt.creditor, name: r.debt.name })}
+                                                    : t('tr.outLine', { name: r.debt.name })}
                                             </Link>
                                         ) : (
                                             <span className="text-mute">—</span>

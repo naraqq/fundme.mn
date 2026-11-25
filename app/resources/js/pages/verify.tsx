@@ -10,7 +10,7 @@ type Result = {
     reference: string;
     paid_at: string;
     has_receipt: boolean;
-    debt: { id: number; name: string; title: string; creditor: string };
+    debt: { id: number; name: string; title: string };
 } | null;
 
 export default function Verify({ code, result }: { code: string; result: Result }) {
@@ -47,11 +47,11 @@ export default function Verify({ code, result }: { code: string; result: Result 
                             <dt className="text-mute">{t('vf.amount')}</dt>
                             <dd className="text-lg font-bold">{mnt(result.amount)}</dd>
                             <dt className="text-mute">{t('vf.to')}</dt>
-                            <dd>{result.debt.creditor}</dd>
+                            <dd>{result.debt.name}</dd>
                             <dt className="text-mute">{t('vf.for')}</dt>
                             <dd>
                                 <Link href={route('debts.show', result.debt.id)} className="text-brand hover:text-brand-2">
-                                    {result.debt.name} — {result.debt.title}
+                                    {result.debt.title}
                                 </Link>
                             </dd>
                             <dt className="text-mute">{t('vf.date')}</dt>

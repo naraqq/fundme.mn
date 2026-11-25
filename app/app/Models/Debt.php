@@ -18,6 +18,7 @@ class Debt extends Model
 
     protected $fillable = [
         'name', 'age', 'city', 'title', 'story', 'category', 'creditor', 'amount', 'color',
+        'bank_name', 'bank_account', 'account_holder',
         'photo_path', 'photo_credit', 'photo_credit_url', 'bill_path', 'status', 'verified_at', 'verification_note',
     ];
 
@@ -29,7 +30,16 @@ class Debt extends Model
 
     protected $appends = ['paid', 'remaining', 'disbursed', 'phase', 'verified', 'photo_url'];
 
-    protected $hidden = ['user_id', 'bill_path', 'photo_path', 'paid_sum', 'disbursed_sum'];
+    // The payout account is private: only the admin panel reads it explicitly (see payoutAccount()).
+    protected $hidden = ['user_id', 'bill_path', 'photo_path', 'paid_sum', 'disbursed_sum', 'bank_name', 'bank_account', 'account_holder'];
+
+    /** Where collected donations go. Admin-only. */
+    public function payoutAccount(): ?array
+    {
+        return $this->bank_account
+            ? ['bank' => $this->bank_name, 'account' => $this->bank_account, 'holder' => $this->account_holder]
+            : null;
+    }
 
     public function user(): BelongsTo
     {
@@ -94,7 +104,7 @@ class Debt extends Model
         return $this->status === 'verified';
     }
 
-    /** pending → open → funded (all collected) → settled (all sent to creditor); or rejected. */
+    /** pending → open → funded (all collected) → settled (all paid out to the requester); or rejected. */
     public function getPhaseAttribute(): string
     {
         if ($this->status !== 'verified') {

@@ -19,7 +19,7 @@ function stepOf(debt: Debt): number {
 }
 
 /**
- * Where a request stands: Under review → Collecting → Fully collected → Sent to creditor,
+ * Where a request stands: Under review → Collecting → Fully collected → Paid out,
  * plus one sentence explaining the current step in money terms.
  */
 export function RequestProgress({ debt, compact = false }: { debt: Debt; compact?: boolean }) {
@@ -28,10 +28,10 @@ export function RequestProgress({ debt, compact = false }: { debt: Debt; compact
 
     const current = stepOf(debt);
     const done = debt.phase === 'settled';
-    const vars = { paid: mnt(debt.paid), amount: mnt(debt.amount), creditor: debt.creditor };
+    const vars = { paid: mnt(debt.paid), amount: mnt(debt.amount), name: debt.name };
     const detail = t(`st.${STEPS[current]}D`, vars);
-    // Money can go to the creditor in parts before everything is collected.
-    const partSent = !done && debt.disbursed > 0 ? t('st.partSent', { amount: mnt(debt.disbursed), creditor: debt.creditor }) : null;
+    // Money can be sent in parts before everything is collected.
+    const partSent = !done && debt.disbursed > 0 ? t('st.partSent', { amount: mnt(debt.disbursed), name: debt.name }) : null;
 
     return (
         <div className={compact ? '' : 'border-line rounded-xl border bg-white p-5'}>
@@ -69,7 +69,7 @@ const STAGE_STYLE: Record<PaymentStage, string> = {
     sent: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
 };
 
-/** Donor-facing label for one donation: Payment pending / Collected / Sent to creditor / Not completed. */
+/** Donor-facing label for one donation: Payment pending / Collected / Paid out / Not completed. */
 export function PaymentStageBadge({ stage }: { stage: PaymentStage }) {
     const { t } = useT();
     const Icon = stage === 'sent' ? Check : stage === 'failed' ? X : stage === 'pending' ? Clock : null;

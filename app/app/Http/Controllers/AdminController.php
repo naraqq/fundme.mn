@@ -17,11 +17,17 @@ class AdminController extends Controller
     {
         // Most people sign up by phone, so admins need the phone to reach them (admin-only data).
         $pending = Debt::withPaid()->where('status', 'pending')->with('user:id,name,email,phone')->oldest()->get()
-            ->map(fn (Debt $d) => [...$d->toArray(), 'owner' => $d->user?->only('id', 'name', 'email', 'phone'), 'has_bill' => (bool) $d->bill_path]);
+            ->map(fn (Debt $d) => [
+                ...$d->toArray(),
+                'owner' => $d->user?->only('id', 'name', 'email', 'phone'),
+                'has_bill' => (bool) $d->bill_path,
+                'payout' => $d->payoutAccount(),
+            ]);
 
-        // Money collected but not yet sent to the creditor.
-        $toDisburse = Debt::withPaid()->public()->oldest()->get()
+        // Money collected but not yet sent to the requester, with the account to send it to.
+        $toDisburse = Debt::withPaid()->public()->with('user:id,phone')->oldest()->get()
             ->filter(fn (Debt $d) => $d->paid > $d->disbursed)
+            ->map(fn (Debt $d) => [...$d->toArray(), 'payout' => $d->payoutAccount(), 'phone' => $d->user?->phone])
             ->values();
 
         $pendingCompanies = \App\Models\User::companies()->where('company_verified', false)->oldest()->get()
@@ -87,6 +93,6 @@ class AdminController extends Controller
             'paid_at' => now(),
         ]);
 
-        return back()->with('toast', $this->toast('toast.disbursed', ['amount' => (int) $data['amount'], 'creditor' => $debt->creditor]));
+        return back()->with('toast', $this->toast('toast.disbursed', ['amount' => (int) $data['amount'], 'name' => $debt->name]));
     }
 }

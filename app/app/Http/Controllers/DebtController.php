@@ -97,12 +97,15 @@ class DebtController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('debts/create');
+        return Inertia::render('debts/create', ['banks' => config('payments.banks')]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $request->merge(['amount' => (int) preg_replace('/\D/', '', (string) $request->input('amount'))]);
+        $request->merge([
+            'amount' => (int) preg_replace('/\D/', '', (string) $request->input('amount')),
+            'bank_account' => preg_replace('/[\s-]/', '', (string) $request->input('bank_account')),
+        ]);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:60'],
@@ -111,20 +114,25 @@ class DebtController extends Controller
             'title' => ['required', 'string', 'max:70'],
             'story' => ['required', 'string', 'min:40', 'max:3000'],
             'category' => ['required', Rule::in(Debt::CATEGORIES)],
-            'creditor' => ['required', 'string', 'max:120'],
             'amount' => ['required', 'integer', 'min:5000', 'max:500000000'],
-            'bill' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            // Where the collected donations are sent (admin-only). IBANs look like MN + 18 digits.
+            'bank_name' => ['required', Rule::in(config('payments.banks'))],
+            'bank_account' => ['required', 'regex:/^(MN\d{18}|\d{6,20})$/i'],
+            'account_holder' => ['required', 'string', 'max:80'],
+            // Optional supporting photo/document (contract, screenshot…), seen by admins only.
+            'bill' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'photo' => ['nullable', 'image', 'max:5120'],
         ], [
             'amount.min' => __('Amount must be at least ₮5,000.'),
             'story.min' => __('Tell a bit more of your story (40+ characters).'),
-            'bill.required' => __('Upload your bill or contract so we can verify it.'),
+            'bank_account.regex' => __('Enter a valid account number (digits only, or an MN IBAN).'),
         ]);
 
         $debt = $request->user()->debts()->create([
             ...collect($data)->except('bill', 'photo')->all(),
+            'bank_account' => strtoupper($data['bank_account']),
             'photo_path' => $request->file('photo')?->store('photos', 'public'),
-            'bill_path' => $request->file('bill')->store('bills'), // private disk
+            'bill_path' => $request->file('bill')?->store('bills'), // private disk
             'status' => 'pending',
             'color' => Debt::COLORS[array_rand(Debt::COLORS)],
         ]);

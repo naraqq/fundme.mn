@@ -32,7 +32,7 @@ export default function ShowDebt({ debt, isOwner, shareUrl }: Props) {
                             <div className="min-w-0 flex-1">
                                 <div className="font-semibold">{t('show.organizer', { name: debt.name })}</div>
                                 <div className="text-mute text-sm">
-                                    📍 {debt.city} · {t('show.payee', { creditor: debt.creditor })}
+                                    📍 {debt.city}
                                 </div>
                             </div>
                             <Badges debt={debt} />

@@ -166,7 +166,6 @@ export default function SwipeDeck({ debts }: { debts: Debt[] }) {
                         <span>{t('card.donations', { n: current.payments_count ?? 0 })}</span>
                         <span className="text-ink font-medium">{t('disc.remaining', { amount: mnt(current.remaining) })}</span>
                     </div>
-                    <div className="border-line text-mute mt-4 truncate border-t pt-3 text-xs">{t('card.owedTo', { name: current.creditor })}</div>
                 </div>
 
                 {/* Pinned to the bottom of the screen on phones so Skip/Help are always in reach. */}

@@ -50,8 +50,8 @@ class Payment extends Model
 
     /**
      * Where each donation is, from the donor's point of view:
-     * pending → collected (fundme.mn holds it) → sent (the creditor has it); or failed.
-     * Transfers to the creditor are matched to donations oldest-first.
+     * pending → collected (fundme.mn holds it) → sent (paid out to the requester); or failed.
+     * Payouts are matched to donations oldest-first.
      *
      * @param  \Illuminate\Support\Collection<int, Payment>  $payments
      * @return array<int, string> payment id => stage

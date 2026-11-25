@@ -46,7 +46,7 @@ class ProfileController extends Controller
 
     /**
      * Delete the account. Most users log in by phone and have no password, so we ask for an explicit
-     * confirmation instead. Money records stay (requests, donations and transfers keep the creditor paid),
+     * confirmation instead. Money records stay (requests, donations and payouts),
      * but the person's past donations become anonymous so their name no longer appears publicly.
      */
     public function destroy(Request $request): RedirectResponse

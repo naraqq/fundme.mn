@@ -29,7 +29,7 @@ export function VerificationPanel({ debt }: { debt: Debt }) {
     );
 }
 
-/** Problems 2 + 3: exactly how much came in, how much went to the creditor, how much is still waiting. */
+/** Exactly how much came in, how much was sent to the person, and how much is still waiting. */
 export function MoneyTrail({ debt }: { debt: Debt }) {
     const { t } = useT();
     const held = debt.paid - debt.disbursed;
@@ -80,7 +80,7 @@ export function Receipts({ debt }: { debt: Debt }) {
                             <span className="text-mute text-xs">{fmtDate(r.paid_at)}</span>
                         </div>
                         <div className="text-mute mt-1 text-xs">
-                            → {debt.creditor} · {t('show.ref', { ref: r.reference })}
+                            → {debt.name} · {t('show.ref', { ref: r.reference })}
                         </div>
                         <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
                             <code className="bg-canvas rounded px-2 py-0.5 font-mono tracking-wider">{r.code}</code>
@@ -110,7 +110,7 @@ export function Timeline({ debt }: { debt: Debt }) {
         events.push({ at: p.created_at, icon: '💛', text: t('tl.payment', { who: p.anonymous ? t('anonymous') : p.payer_name, amount: mnt(p.amount) }) });
     }
     for (const d of debt.disbursements ?? []) {
-        events.push({ at: d.paid_at, icon: '🏦', text: t('tl.disbursed', { amount: mnt(d.amount), creditor: debt.creditor }), tone: 'text-emerald-700' });
+        events.push({ at: d.paid_at, icon: '🏦', text: t('tl.disbursed', { amount: mnt(d.amount), name: debt.name }), tone: 'text-emerald-700' });
     }
     events.sort((a, b) => a.at.localeCompare(b.at));
     if (debt.phase === 'settled') events.push({ at: events[events.length - 1].at, icon: '🎉', text: t('tl.settled'), tone: 'text-brand' });

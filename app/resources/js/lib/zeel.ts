@@ -43,7 +43,8 @@ export type Debt = {
     title: string;
     story: string;
     category: Category;
-    creditor: string;
+    /** Legacy: older requests named who was owed. New requests are paid out to the requester. */
+    creditor: string | null;
     amount: number;
     verified: boolean;
     status: 'pending' | 'verified' | 'rejected';
@@ -63,10 +64,10 @@ export type Debt = {
     disbursements?: Disbursement[];
 };
 
-/** pending → open → funded (all collected) → settled (all sent to creditor); or rejected */
+/** pending → open → funded (all collected) → settled (all paid out to the requester); or rejected */
 export type Phase = 'pending' | 'open' | 'funded' | 'settled' | 'rejected';
 
-/** Money actually sent to the creditor, with a public verification code. */
+/** Money actually sent to the requester, with a public verification code. */
 export type Disbursement = {
     id: number;
     code: string;

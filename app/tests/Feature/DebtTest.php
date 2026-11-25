@@ -51,28 +51,61 @@ class DebtTest extends TestCase
         $this->post("/debts/{$debt->id}/pay", ['amount' => 5000])->assertRedirect('/login');
     }
 
-    public function test_posting_requires_a_bill_and_starts_pending(): void
+    public function test_posting_needs_a_payout_account_not_a_bill_and_starts_pending(): void
     {
         $user = User::factory()->create();
         $fields = [
             'name' => 'Sarnai', 'city' => 'UB', 'title' => 'Rent', 'story' => str_repeat('a', 60),
-            'category' => 'rent', 'creditor' => 'Landlord', 'amount' => '2,700,000',
+            'category' => 'rent', 'amount' => '2,700,000',
         ];
 
-        $this->actingAs($user)->post('/debts', $fields)->assertSessionHasErrors('bill');
+        // No payout account → rejected. A bill/document is not required any more.
+        $this->actingAs($user)->post('/debts', $fields)
+            ->assertSessionHasErrors(['bank_name', 'bank_account', 'account_holder'])
+            ->assertSessionDoesntHaveErrors(['bill', 'creditor']);
 
         $this->actingAs($user)->post('/debts', [
             ...$fields,
-            'bill' => UploadedFile::fake()->create('bill.pdf', 100, 'application/pdf'),
+            'bank_name' => 'Хаан банк', 'bank_account' => '5000 123 456', 'account_holder' => 'Sarnai',
             'photo' => UploadedFile::fake()->image('me.jpg', 800, 500),
-        ])->assertRedirect();
+        ])->assertSessionHasNoErrors()->assertRedirect();
 
         $debt = Debt::firstOrFail();
         $this->assertSame('pending', $debt->status);
         $this->assertSame(2_700_000, $debt->amount);
-        Storage::assertExists($debt->bill_path);
+        $this->assertSame('5000123456', $debt->bank_account, 'spaces are stripped');
+        $this->assertNull($debt->bill_path);
+        $this->assertNull($debt->creditor);
         Storage::disk('public')->assertExists($debt->photo_path);
         $this->assertStringStartsWith('/storage/photos/', $debt->photo_url);
+    }
+
+    public function test_optional_supporting_document_is_stored_privately(): void
+    {
+        $this->actingAs(User::factory()->create())->post('/debts', [
+            'name' => 'Bold', 'city' => 'UB', 'title' => 'Tuition', 'story' => str_repeat('a', 60),
+            'category' => 'tuition', 'amount' => '900,000',
+            'bank_name' => 'Голомт банк', 'bank_account' => 'mn123456789012345678', 'account_holder' => 'Bold',
+            'bill' => UploadedFile::fake()->create('contract.pdf', 100, 'application/pdf'),
+        ])->assertSessionHasNoErrors();
+
+        $debt = Debt::firstOrFail();
+        Storage::assertExists($debt->bill_path);
+        $this->assertSame('MN123456789012345678', $debt->bank_account);
+    }
+
+    public function test_payout_account_must_look_real_and_stays_private(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user)->post('/debts', [
+            'name' => 'Bold', 'city' => 'UB', 'title' => 'Tuition', 'story' => str_repeat('a', 60),
+            'category' => 'tuition', 'amount' => '900,000',
+            'bank_name' => 'Fake bank', 'bank_account' => 'abc', 'account_holder' => 'Bold',
+        ])->assertSessionHasErrors(['bank_name', 'bank_account']);
+
+        $debt = $this->makeDebt($user);
+        $debt->update(['bank_name' => 'Хаан банк', 'bank_account' => '5000123456', 'account_holder' => 'Bat']);
+        $this->get("/debts/{$debt->id}")->assertOk()->assertDontSee('5000123456');
     }
 
     public function test_pending_debt_is_hidden_and_cannot_be_paid(): void
@@ -164,8 +197,8 @@ class DebtTest extends TestCase
     {
         $this->actingAs(User::factory()->create())->post('/debts', [
             'name' => 'Toroo', 'city' => 'UB', 'title' => 'Lunch', 'story' => str_repeat('a', 60),
-            'category' => 'food', 'creditor' => 'School canteen', 'amount' => '5,000',
-            'bill' => UploadedFile::fake()->create('bill.pdf', 10, 'application/pdf'),
+            'category' => 'food', 'amount' => '5,000',
+            'bank_name' => 'Хаан банк', 'bank_account' => '5000123456', 'account_holder' => 'Toroo',
         ])->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('debts', ['category' => 'food', 'amount' => 5000]);

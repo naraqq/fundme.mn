@@ -109,7 +109,11 @@ class DebtSeeder extends Seeder
 
             $debt = $owner->debts()->create([
                 ...compact('name', 'age', 'city', 'title', 'story', 'category', 'creditor', 'amount', 'color'),
-                'bill_path' => $bill,
+                'bill_path' => $i % 2 === 0 ? $bill : null, // supporting documents are optional
+                // Fake payout account (admin-only), so the transfer queue looks real.
+                'bank_name' => config('payments.banks')[$i % count(config('payments.banks'))],
+                'bank_account' => (string) (5000000000 + $i * 1_234_567),
+                'account_holder' => $name,
                 ...$this->photo($slugs[$name] ?? null, $photoDir, $credits),
                 'status' => $verified ? 'verified' : 'pending',
                 'verified_at' => $verified ? $verifiedAt : null,
